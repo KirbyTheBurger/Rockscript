@@ -41,13 +41,13 @@ You can print expressions using the `present` keyword. Examples:
 ```rockscript
 present 12
 ```  
-*output: `12`*  
+*output:* `12`  
   
 ```rockscript
 throw rock named "Hello world!" at x
 present x
 ```  
-*output: `Hello world!`*  
+*output:* `Hello world!`  
   
 ## Binary operations  
 The only way of performing binary operations is by mutating a variable. These are all possible operations:  
@@ -58,7 +58,7 @@ throw 5 rocks at x
 smash 2 into x
 present x
 ```  
-*output: `7`*  
+*output:* `7`  
   
 ```rockscript
 throw 3 rocks at x
@@ -66,7 +66,7 @@ throw 2 rocks at y
 smash y into x
 present x
 ```  
-*output: `5`*  
+*output:* `5`  
   
 Addition also works on strings, which will concatenate them:  
 ```rockscript
@@ -74,7 +74,7 @@ throw rock named "Hello" at x
 smash "World" into x
 present x
 ```  
-*output: `HelloWorld`*  
+*output:* `HelloWorld`  
   
 ### Subtraction  
 ```rockscript
@@ -82,7 +82,7 @@ throw 4 rocks at x
 chip 3 off x
 present x
 ```  
-*output: `1`*  
+*output:* `1`  
   
 ### Multiplication  
 ```rockscript
@@ -91,7 +91,7 @@ throw 6 rocks at y
 mate y with x
 present x
 ```  
-*output: `30`*  
+*output:* `30`  
   
 You are also able to multiply strings with numbers, resulting in a repeated string:  
 ```rockscript
@@ -99,7 +99,7 @@ throw rock named "rock " at x
 mate 3 with x
 present x
 ```  
-*output: `rock rock rock `*  
+*output:* `rock rock rock `  
   
 ### Division  
 ```rockscript
@@ -108,4 +108,4 @@ throw 3 rocks at y
 split y from x
 present x
 ```  
-*output: `4`*
+*output:* `4`
