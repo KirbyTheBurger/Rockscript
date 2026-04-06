@@ -6,6 +6,7 @@ use crate::parser::{BinaryOperation, Expression};
 pub enum Value {
     Number(f64),
     String(String),
+    Boolean(bool),
 }
 
 pub struct Interpreter {
@@ -80,6 +81,7 @@ impl Interpreter {
         match expression {
             Expression::Number(n) => Value::Number(n),
             Expression::String(s) => Value::String(s),
+            Expression::Boolean(b) => Value::Boolean(b),
             Expression::Identifier(s) => {
                 let value = self.variables.get(&s);
                 match value {
@@ -110,6 +112,7 @@ impl ToString for Value {
         match self {
             Value::Number(n) => n.to_string(),
             Value::String(s) => s.clone(),
+            Value::Boolean(b) => b.to_string(),
         }
     }
 }
@@ -120,11 +123,14 @@ impl AddAssign for Value {
             Value::Number(n1) => match rhs {
                 Value::Number(n2) => *n1 += n2,
                 Value::String(s) => *n1 += s.parse::<f64>().expect("failed to add string to number"),
+                _ => panic!("incompatible types"),
             },
             Value::String(s1) => match rhs {
                 Value::Number(n) => s1.push_str(n.to_string().as_str()),
                 Value::String(s2) => s1.push_str(s2.as_str()),
-            }
+                _ => panic!("incompatible types"),
+            },
+            _ => panic!("incompatible types"),
         }
     }
 }
@@ -135,8 +141,9 @@ impl SubAssign for Value {
             Value::Number(n1) => match rhs {
                 Value::Number(n2) => *n1 -= n2,
                 Value::String(s) => *n1 -= s.parse::<f64>().expect("failed to add string to number"),
+                _ => panic!("incompatible types"),
             },
-            Value::String(_) => panic!("cant subtract from string")
+            _ => panic!("incompatible types"),
         }
     }
 }
@@ -147,11 +154,13 @@ impl MulAssign for Value {
             Value::Number(n1) => match rhs {
                 Value::Number(n2) => *n1 *= n2,
                 Value::String(s) => *n1 *= s.parse::<f64>().expect("failed to add string to number"),
+                _ => panic!("incompatible types"),
             },
             Value::String(s) => match rhs {
                 Value::Number(n) => *s = s.repeat(n as usize),
-                Value::String(_) => panic!("cant multiply string with string"),
-            }
+                _ => panic!("incompatible types"),
+            },
+            _ => panic!("incompatible types"),
         }
     }
 }
@@ -162,8 +171,9 @@ impl DivAssign for Value {
             Value::Number(n1) => match rhs {
                 Value::Number(n2) => *n1 /= n2,
                 Value::String(s) => *n1 /= s.parse::<f64>().expect("failed to add string to number"),
+                _ => panic!("incompatible types"),
             },
-            Value::String(_) => panic!("cant divide string")
+            _ => panic!("incompatible types"),
         }
     }
 }

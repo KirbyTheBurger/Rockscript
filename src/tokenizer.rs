@@ -3,6 +3,7 @@ pub enum Token {
     Identifier(String),
     Number(f64),
     String(String),
+    Boolean(bool),
 
     Throw,
     At,
@@ -121,6 +122,8 @@ impl Lexer {
             "with" => Token::With,
             "split" => Token::Split,
             "from" => Token::From,
+            "big" => Token::Boolean(true),
+            "small" => Token::Boolean(false),
             _ => Token::Identifier(identifier),
         }
     }

@@ -4,6 +4,7 @@ use crate::tokenizer::Token;
 pub enum Expression {
     Number(f64),
     String(String),
+    Boolean(bool),
 
     Identifier(String),
 
@@ -70,6 +71,10 @@ impl Parser {
                     self.advance();
                     Expression::String(s)
                 },
+                Token::Boolean(b) => {
+                    self.advance();
+                    Expression::Boolean(b)
+                }
                 Token::Present => self.read_print(),
                 Token::Identifier(s) => {
                     self.advance();
