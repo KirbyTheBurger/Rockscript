@@ -11,6 +11,9 @@ pub enum Token {
 
     Present,
 
+    Smash,
+    Into,
+
     Error,
     EOF,
 }
@@ -34,7 +37,7 @@ impl Lexer {
         while let Some(c) = self.current() {
             tokens.push(match c {
                 '"' => self.read_string(),
-                _ if c.is_numeric() => self.read_number(),
+                _ if c.is_numeric() || c == '.' => self.read_number(),
                 _ => self.read_identifier(),
             });
 
@@ -104,6 +107,8 @@ impl Lexer {
             "at" => Token::At,
             "named" => Token::Named,
             "present" => Token::Present,
+            "smash" => Token::Smash,
+            "into" => Token::Into,
             _ => Token::Identifier(identifier),
         }
     }

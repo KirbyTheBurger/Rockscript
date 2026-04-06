@@ -12,10 +12,21 @@ pub enum Expression {
         value: Box<Expression>,
     },
 
+    BinaryOp {
+        operation: BinaryOperation,
+        variable: String,
+        value: Box<Expression>,
+    },
+
     Print(Box<Expression>),
 
     Error,
     EOF,
+}
+
+#[derive(Debug, Clone)]
+pub enum BinaryOperation {
+    Add,
 }
 
 pub struct Parser {
@@ -61,6 +72,7 @@ impl Parser {
                     self.advance();
                     Expression::Identifier(s)
                 },
+                Token::Smash => self.read_binary_op(),
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -69,6 +81,30 @@ impl Parser {
             }
         } else {
             self.advance();
+            Expression::Error
+        }
+    }
+
+    fn read_binary_op(&mut self) -> Expression {
+        let op_keyword = self.current();
+        self.advance();
+
+        let value = self.parse_expression();
+        if !matches!(self.current(), Some(Token::Into)) {
+            return Expression::Error;
+        }
+
+        self.advance();
+
+        if let Some(Token::Identifier(s)) = self.current() {
+            self.advance();
+
+            Expression::BinaryOp {
+                operation: BinaryOperation::from_token(op_keyword.unwrap()),
+                variable: s,
+                value: Box::new(value),
+            }
+        } else {
             Expression::Error
         }
     }
@@ -129,5 +165,14 @@ impl Parser {
 
     fn advance(&mut self) {
         self.pos += 1;
+    }
+}
+
+impl BinaryOperation {
+    fn from_token(token: Token) -> BinaryOperation {
+        match token {
+            Token::Smash => BinaryOperation::Add,
+            _ => panic!("cant parse token into binary operation, did you forget to implement it?"),
+        }
     }
 }

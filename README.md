@@ -27,3 +27,30 @@ throw rock named "Hello world!" at x
 present x
 ```  
 *output: `Hello world!`*  
+  
+## Binary operations  
+The only way of performing binary operations is by mutating a variable. These are all possible operations:  
+  
+**Addition**  
+```
+throw 5 rocks at x
+smash 2 into x
+present x
+```  
+*output: `7`*  
+  
+```
+throw 3 rocks at x
+throw 2 rocks at y
+smash y into x
+present x
+```  
+*output: `5`*  
+  
+Addition also works on strings, which will concatenate them:  
+```
+throw rock named "Hello" at x
+smash "World" into x
+present x
+```  
+*output: `HelloWorld`*  

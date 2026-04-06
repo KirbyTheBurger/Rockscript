@@ -1,6 +1,6 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::AddAssign};
 
-use crate::parser::Expression;
+use crate::parser::{BinaryOperation, Expression};
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -42,11 +42,29 @@ impl Interpreter {
             },
             Expression::Print(v) => {
                 println!("{}", self.eval_value(*v).to_string())
+            },
+            Expression::BinaryOp{..} => {
+                self.eval_binary_op(expression);
             }
             _ => println!("unknown expression"),
         }
 
         self.advance();
+    }
+
+    fn eval_binary_op(&mut self, expression: Expression) {
+        if let Expression::BinaryOp {
+            operation, variable, value
+        } = expression {
+            match operation {
+                BinaryOperation::Add => {
+                    let evaluated = self.eval_value(*value);
+                    *self.variables.get_mut(&variable).unwrap() += evaluated;
+                }
+            }
+        } else {
+            panic!("can only evaluate binary operation")
+        }
     }
 
     fn eval_value(&mut self, expression: Expression) -> Value {
@@ -83,6 +101,21 @@ impl ToString for Value {
         match self {
             Value::Number(n) => n.to_string(),
             Value::String(s) => s.clone(),
+        }
+    }
+}
+
+impl AddAssign for Value {
+    fn add_assign(&mut self, rhs: Self) {
+        match self {
+            Value::Number(n1) => match rhs {
+                Value::Number(n2) => *n1 += n2,
+                Value::String(s) => *n1 += s.parse::<f64>().expect("failed to add string to number"),
+            },
+            Value::String(s1) => match rhs {
+                Value::Number(n) => s1.push_str(n.to_string().as_str()),
+                Value::String(s2) => s1.push_str(s2.as_str()),
+            }
         }
     }
 }
