@@ -4,7 +4,9 @@ Rockscript is an esolang made by me. Below is some documentation and code exampl
 There are 3 types of variables, **strings**, **boleans** and **numbers**.  
   
 **Numbers**  
-```throw 12 rocks at x```  
+```rockscript
+throw 12 rocks at x
+```  
 is the equivalent of:  
 ```let x = 12```  
 You can replace `rocks` with `rock`, which is preferred when the value is 1. Example:  
