@@ -1,5 +1,3 @@
-Rockscript is an esolang made by me. Below is some documentation and code examples.  
-  
 ## Variables  
 There are 3 types of variables, **strings**, **boleans** and **numbers**.  
   
