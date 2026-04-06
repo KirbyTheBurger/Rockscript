@@ -22,6 +22,8 @@ You can print expressions using the `present` keyword. Examples:
 `present 12`  
 *output: `12`*  
   
-`throw rock named "Hello world!" at x  
-present x`  
+```
+throw rock named "Hello world!" at x
+present x
+```  
 *output: `Hello world!`*  
