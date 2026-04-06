@@ -10,18 +10,22 @@ pub enum Value {
 }
 
 pub struct Interpreter {
-    pub variables: HashMap<String, Value>,
+    pub variables: Vec<HashMap<String, Value>>,
     expressions: Vec<Expression>,
     pos: usize,
 }
 
 impl Interpreter {
     pub fn new(expressions: Vec<Expression>) -> Interpreter {
-        Interpreter {
-            variables: HashMap::new(),
+        let mut interpreter = Interpreter {
+            variables: Vec::new(),
             expressions,
             pos: 0,
-        }
+        };
+
+        interpreter.push_scope();
+
+        interpreter
     }
 
     pub fn run(&mut self) {
@@ -53,6 +57,38 @@ impl Interpreter {
         self.advance();
     }
 
+    fn push_scope(&mut self) {
+        self.variables.push(HashMap::new());
+    }
+
+    fn pop_scope(&mut self) {
+        self.variables.pop();
+    }
+
+    fn get_variable(&self, name: String) -> Option<&Value> {
+        for hm in self.variables.iter().rev() {
+            if let Some(v) = hm.get(&name) {
+                return Some(v);
+            }
+        }
+
+        None
+    }
+
+     fn get_variable_mut(&mut self, name: String) -> Option<&mut Value> {
+        for hm in self.variables.iter_mut().rev() {
+            if let Some(v) = hm.get_mut(&name) {
+                return Some(v);
+            }
+        }
+
+        None
+    }
+
+    fn insert_variable(&mut self, name: String, value: Value) {
+        self.variables.last_mut().unwrap().insert(name, value);
+    }
+
     fn eval_binary_op(&mut self, expression: Expression) {
         if let Expression::BinaryOp {
             operation, variable, value
@@ -60,16 +96,16 @@ impl Interpreter {
             let evaluated = self.eval_value(*value);
             match operation {
                 BinaryOperation::Add => {
-                    *self.variables.get_mut(&variable).unwrap() += evaluated;
+                    *self.get_variable_mut(variable).unwrap() += evaluated;
                 },
                 BinaryOperation::Sub => {
-                    *self.variables.get_mut(&variable).unwrap() -= evaluated;
+                    *self.get_variable_mut(variable).unwrap() -= evaluated;
                 },
                 BinaryOperation::Mul => {
-                    *self.variables.get_mut(&variable).unwrap() *= evaluated;
+                    *self.get_variable_mut(variable).unwrap() *= evaluated;
                 },
                 BinaryOperation::Div => {
-                    *self.variables.get_mut(&variable).unwrap() /= evaluated
+                    *self.get_variable_mut(variable).unwrap() /= evaluated
                 }
             }
         } else {
@@ -83,7 +119,7 @@ impl Interpreter {
             Expression::String(s) => Value::String(s),
             Expression::Boolean(b) => Value::Boolean(b),
             Expression::Identifier(s) => {
-                let value = self.variables.get(&s);
+                let value = self.get_variable(s);
                 match value {
                     Some(v) => v.clone(),
                     None => panic!("unknown variable"),
@@ -95,7 +131,7 @@ impl Interpreter {
 
     fn define_var(&mut self, name: String, value: Expression) {
         let evaluated = self.eval_value(value);
-        self.variables.insert(name, evaluated);
+        self.insert_variable(name, evaluated);
     }
 
     fn current(&self) -> Option<Expression> {
