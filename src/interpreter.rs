@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::parser::Expression;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Number(f64),
     String(String),
@@ -40,6 +40,9 @@ impl Interpreter {
             Expression::VarDef { name, value } => {
                 self.define_var(name, *value);
             },
+            Expression::Print(v) => {
+                println!("{}", self.eval_value(*v).to_string())
+            }
             _ => println!("unknown expression"),
         }
 
@@ -50,6 +53,13 @@ impl Interpreter {
         match expression {
             Expression::Number(n) => Value::Number(n),
             Expression::String(s) => Value::String(s),
+            Expression::Identifier(s) => {
+                let value = self.variables.get(&s);
+                match value {
+                    Some(v) => v.clone(),
+                    None => panic!("unknown variable"),
+                }
+            },
             _ => panic!("unknown value or not yet implemented"),
         }
     }
@@ -65,5 +75,14 @@ impl Interpreter {
 
     fn advance(&mut self) {
         self.pos += 1;
+    }
+}
+
+impl ToString for Value {
+    fn to_string(&self) -> String {
+        match self {
+            Value::Number(n) => n.to_string(),
+            Value::String(s) => s.clone(),
+        }
     }
 }

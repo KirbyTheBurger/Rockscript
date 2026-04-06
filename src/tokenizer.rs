@@ -9,6 +9,8 @@ pub enum Token {
     Named,
     Rock,
 
+    Present,
+
     Error,
     EOF,
 }
@@ -101,6 +103,7 @@ impl Lexer {
             "rock" | "rocks" => Token::Rock,
             "at" => Token::At,
             "named" => Token::Named,
+            "present" => Token::Present,
             _ => Token::Identifier(identifier),
         }
     }

@@ -5,10 +5,14 @@ pub enum Expression {
     Number(f64),
     String(String),
 
+    Identifier(String),
+
     VarDef {
         name: String,
         value: Box<Expression>,
     },
+
+    Print(Box<Expression>),
 
     Error,
     EOF,
@@ -52,6 +56,11 @@ impl Parser {
                     self.advance();
                     Expression::String(s)
                 },
+                Token::Present => self.read_print(),
+                Token::Identifier(s) => {
+                    self.advance();
+                    Expression::Identifier(s)
+                },
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -62,6 +71,12 @@ impl Parser {
             self.advance();
             Expression::Error
         }
+    }
+
+    fn read_print(&mut self) -> Expression {
+        self.advance();
+        let value = Box::new(self.parse_expression());
+        Expression::Print(value)
     }
 
     fn read_var_def(&mut self) -> Expression {
