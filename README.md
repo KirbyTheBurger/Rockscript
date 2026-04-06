@@ -79,3 +79,12 @@ mate 3 with x
 present x
 ```  
 *output: `rock rock rock `*  
+  
+**Division**  
+```
+throw 12 rocks at x
+throw 3 rocks at y
+split y from x
+present x
+```  
+*output: `4`*

@@ -29,6 +29,7 @@ pub enum BinaryOperation {
     Add,
     Sub,
     Mul,
+    Div,
 }
 
 pub struct Parser {
@@ -74,7 +75,7 @@ impl Parser {
                     self.advance();
                     Expression::Identifier(s)
                 },
-                Token::Smash | Token::Chip | Token::Mate => self.read_binary_op(),
+                Token::Smash | Token::Chip | Token::Mate | Token::Split => self.read_binary_op(),
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -92,7 +93,7 @@ impl Parser {
         self.advance();
 
         let value = self.parse_expression();
-        if !matches!(self.current(), Some(Token::Into | Token::Off | Token::With)) {
+        if !matches!(self.current(), Some(Token::Into | Token::Off | Token::With | Token::From)) {
             return Expression::Error;
         }
 
@@ -176,6 +177,7 @@ impl BinaryOperation {
             Token::Smash => BinaryOperation::Add,
             Token::Chip => BinaryOperation::Sub,
             Token::Mate => BinaryOperation::Mul,
+            Token::Split => BinaryOperation::Div,
             _ => panic!("cant parse token into binary operation, did you forget to implement it?"),
         }
     }

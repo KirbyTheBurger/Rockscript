@@ -17,6 +17,8 @@ pub enum Token {
     Off,
     Mate,
     With,
+    Split,
+    From,
 
     Error,
     EOF,
@@ -117,6 +119,8 @@ impl Lexer {
             "off" => Token::Off,
             "mate" => Token::Mate,
             "with" => Token::With,
+            "split" => Token::Split,
+            "from" => Token::From,
             _ => Token::Identifier(identifier),
         }
     }
