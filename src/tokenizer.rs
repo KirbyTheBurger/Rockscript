@@ -2,10 +2,11 @@
 pub enum Token {
     Identifier(String),
     Number(f64),
+    String(String),
 
     Throw,
     At,
-
+    Named,
     Rock,
 
     Error,
@@ -29,7 +30,8 @@ impl Lexer {
         let mut tokens = Vec::new();
 
         while let Some(c) = self.current() {
-            tokens.push(match self.current() {
+            tokens.push(match c {
+                '"' => self.read_string(),
                 _ if c.is_numeric() => self.read_number(),
                 _ => self.read_identifier(),
             });
@@ -40,6 +42,24 @@ impl Lexer {
         tokens.push(Token::EOF);
 
         tokens
+    }
+
+    fn read_string(&mut self) -> Token {
+        self.advance();
+
+        let mut string = String::new();
+        while let Some(c) = self.current() {
+            if c == '"' {
+                break;
+            }
+
+            string.push(c);
+            self.advance();
+        }
+
+        self.advance();
+
+        Token::String(string)
     }
 
     fn read_number(&mut self) -> Token {
@@ -80,6 +100,7 @@ impl Lexer {
             "throw" => Token::Throw,
             "rock" | "rocks" => Token::Rock,
             "at" => Token::At,
+            "named" => Token::Named,
             _ => Token::Identifier(identifier),
         }
     }

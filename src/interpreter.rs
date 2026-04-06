@@ -5,6 +5,7 @@ use crate::parser::Expression;
 #[derive(Debug)]
 pub enum Value {
     Number(f64),
+    String(String),
 }
 
 pub struct Interpreter {
@@ -24,24 +25,38 @@ impl Interpreter {
 
     pub fn run(&mut self) {
         loop {
-            if let Some(e) = self.current() {
-                match e {
-                    Expression::VarDef { name, value } => {
-                        self.define_var(name, *value);
-                    },
-                    _ => break,
-                }
-            } else {
+            let current = self.current();
+
+            if let Some(Expression::EOF) | None = current {
                 break;
             }
 
-            self.advance();
+            self.eval_expression(current.unwrap());
+        }
+    }
+
+    fn eval_expression(&mut self, expression: Expression) {
+        match expression {
+            Expression::VarDef { name, value } => {
+                self.define_var(name, *value);
+            },
+            _ => println!("unknown expression"),
+        }
+
+        self.advance();
+    }
+
+    fn eval_value(&mut self, expression: Expression) -> Value {
+        match expression {
+            Expression::Number(n) => Value::Number(n),
+            Expression::String(s) => Value::String(s),
+            _ => panic!("unknown value or not yet implemented"),
         }
     }
 
     fn define_var(&mut self, name: String, value: Expression) {
-
-        self.variables.insert(name, Value::from(value));
+        let evaluated = self.eval_value(value);
+        self.variables.insert(name, evaluated);
     }
 
     fn current(&self) -> Option<Expression> {
@@ -50,14 +65,5 @@ impl Interpreter {
 
     fn advance(&mut self) {
         self.pos += 1;
-    }
-}
-
-impl Value {
-    fn from(expression: Expression) -> Value {
-        match expression {
-            Expression::Number(n) => Value::Number(n),
-            _ => panic!("unknown value or not yet implemented"),
-        }
     }
 }

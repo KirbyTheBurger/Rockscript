@@ -3,6 +3,7 @@ use crate::tokenizer::Token;
 #[derive(Debug, Clone)]
 pub enum Expression {
     Number(f64),
+    String(String),
 
     VarDef {
         name: String,
@@ -47,6 +48,10 @@ impl Parser {
                     self.advance();
                     Expression::Number(n)
                 },
+                Token::String(s) => {
+                    self.advance();
+                    Expression::String(s)
+                },
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -62,13 +67,26 @@ impl Parser {
     fn read_var_def(&mut self) -> Expression {
         self.advance();
 
-        let value = Box::new(self.parse_expression());
-
+        let value;
         if !matches!(self.current(), Some(Token::Rock)) {
-            return Expression::Error;
-        }
+            value = Box::new(self.parse_expression());
 
-        self.advance();
+            if !matches!(self.current(), Some(Token::Rock)) {
+                return Expression::Error;
+            }
+
+            self.advance();
+        } else {
+            self.advance();
+
+            if !matches!(self.current(), Some(Token::Named)) {
+                return Expression::Error;
+            }
+
+            self.advance();
+
+            value = Box::new(self.parse_expression());
+        }
 
         if !matches!(self.current(), Some(Token::At)) {
             return Expression::Error;
