@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::AddAssign};
+use std::{collections::HashMap, ops::{AddAssign, SubAssign}};
 
 use crate::parser::{BinaryOperation, Expression};
 
@@ -56,10 +56,13 @@ impl Interpreter {
         if let Expression::BinaryOp {
             operation, variable, value
         } = expression {
+            let evaluated = self.eval_value(*value);
             match operation {
                 BinaryOperation::Add => {
-                    let evaluated = self.eval_value(*value);
                     *self.variables.get_mut(&variable).unwrap() += evaluated;
+                },
+                BinaryOperation::Sub => {
+                    *self.variables.get_mut(&variable).unwrap() -= evaluated;
                 }
             }
         } else {
@@ -116,6 +119,18 @@ impl AddAssign for Value {
                 Value::Number(n) => s1.push_str(n.to_string().as_str()),
                 Value::String(s2) => s1.push_str(s2.as_str()),
             }
+        }
+    }
+}
+
+impl SubAssign for Value {
+    fn sub_assign(&mut self, rhs: Self) {
+        match self {
+            Value::Number(n1) => match rhs {
+                Value::Number(n2) => *n1 -= n2,
+                Value::String(s) => *n1 -= s.parse::<f64>().expect("failed to add string to number"),
+            },
+            Value::String(_) => panic!("cant subtract 2 strings")
         }
     }
 }

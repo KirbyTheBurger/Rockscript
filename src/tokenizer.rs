@@ -13,6 +13,8 @@ pub enum Token {
 
     Smash,
     Into,
+    Chip,
+    Off,
 
     Error,
     EOF,
@@ -109,6 +111,8 @@ impl Lexer {
             "present" => Token::Present,
             "smash" => Token::Smash,
             "into" => Token::Into,
+            "chip" => Token::Chip,
+            "off" => Token::Off,
             _ => Token::Identifier(identifier),
         }
     }

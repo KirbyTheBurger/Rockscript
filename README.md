@@ -54,3 +54,11 @@ smash "World" into x
 present x
 ```  
 *output: `HelloWorld`*  
+  
+**Subtraction**  
+```
+throw 4 rocks at x
+chip 3 off x
+present x
+```  
+*output: `1`*
