@@ -49,8 +49,8 @@ present x
 ```  
 *output:* `Hello world!`  
   
-## Binary operations  
-The only way of performing binary operations is by mutating a variable. These are all possible operations:  
+## Arithmetic 
+The only way of performing Arithmetic is by mutating a variable. These are all possible operations:  
   
 ### Addition  
 ```rockscript
