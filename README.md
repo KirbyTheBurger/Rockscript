@@ -54,7 +54,7 @@ smash "World" into x
 present x
 ```  
 *output: `HelloWorld`*  
-
+  
   
 **Subtraction**  
 ```
