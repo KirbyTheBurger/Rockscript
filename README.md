@@ -15,3 +15,13 @@ You can replace `rocks` with `rock`, which is preferred when the value is 1. Exa
 is the equivalent of  
 `let x = "Hello world!"`  
 You are technically able to replace `rock` with `rocks`, but you shouldn't do so. Rockscript should always look gramatically correct.  
+  
+## Printing  
+You can print expressions using the `present` keyword. Examples:  
+  
+`present 12`  
+*output: `12`*  
+  
+`throw rock named "Hello world!" at x  
+present x`  
+*output: `Hello world!`*  
