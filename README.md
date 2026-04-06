@@ -55,7 +55,6 @@ present x
 ```  
 *output: `HelloWorld`*  
   
-  
 **Subtraction**  
 ```
 throw 4 rocks at x
