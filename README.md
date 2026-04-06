@@ -7,7 +7,7 @@ There are 3 types of variables, **strings**, **boleans** and **numbers**.
 ```rockscript
 throw 12 rocks at x
 ```  
-is the equivalent of:  
+pseudocode:  
 ```rockscript
 let x = 12
 ```  
@@ -20,7 +20,7 @@ throw 1 rock at y
 ```rockscript
 throw rock named "Hello world!" at x
 ```  
-is the equivalent of:  
+pseudocode:  
 ```rockscript
 let x = "Hello world!"
 ```  
@@ -31,7 +31,7 @@ You are technically able to replace `rock` with `rocks`, but you shouldn't do so
 throw big rock at x
 throw small rock at y
 ```  
-is the equivalent of:  
+pseudocode:  
 ```rockscript
 let x = true
 let y = false
