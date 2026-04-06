@@ -15,6 +15,8 @@ pub enum Token {
     Into,
     Chip,
     Off,
+    Mate,
+    With,
 
     Error,
     EOF,
@@ -113,6 +115,8 @@ impl Lexer {
             "into" => Token::Into,
             "chip" => Token::Chip,
             "off" => Token::Off,
+            "mate" => Token::Mate,
+            "with" => Token::With,
             _ => Token::Identifier(identifier),
         }
     }

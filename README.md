@@ -61,4 +61,21 @@ throw 4 rocks at x
 chip 3 off x
 present x
 ```  
-*output: `1`*
+*output: `1`*  
+  
+**Multiplication**  
+```
+throw 5 rocks at x
+throw 6 rocks at y
+mate y with x
+present x
+```  
+*output: `30`*  
+  
+You are also able to multiply strings with numbers, resulting in a repeated string:  
+```
+throw rock named "rock " at x
+mate 3 with x
+present x
+```  
+*output: `rock rock rock `*  
