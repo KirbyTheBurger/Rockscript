@@ -16,7 +16,7 @@ You can replace `rocks` with `rock`, which is preferred when the value is 1. Exa
 throw 1 rock at y
 ```  
   
-**Strings**  
+### Strings  
 ```rockscript
 throw rock named "Hello world!" at x
 ```  
@@ -26,7 +26,7 @@ let x = "Hello world!"
 ```  
 You are technically able to replace `rock` with `rocks`, but you shouldn't do so. Rockscript should always look gramatically correct.  
   
-**Booleans**  
+## Booleans  
 ```rockscript
 throw big rock at x
 throw small rock at y
@@ -54,7 +54,7 @@ present x
 ## Binary operations  
 The only way of performing binary operations is by mutating a variable. These are all possible operations:  
   
-**Addition**  
+### Addition  
 ```rockscript
 throw 5 rocks at x
 smash 2 into x
@@ -78,7 +78,7 @@ present x
 ```  
 *output: `HelloWorld`*  
   
-**Subtraction**  
+### Subtraction  
 ```rockscript
 throw 4 rocks at x
 chip 3 off x
@@ -86,7 +86,7 @@ present x
 ```  
 *output: `1`*  
   
-**Multiplication**  
+### Multiplication  
 ```rockscript
 throw 5 rocks at x
 throw 6 rocks at y
@@ -103,7 +103,7 @@ present x
 ```  
 *output: `rock rock rock `*  
   
-**Division**  
+### Division  
 ```rockscript
 throw 12 rocks at x
 throw 3 rocks at y
