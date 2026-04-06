@@ -1,17 +1,17 @@
-Rockscript is an esolang made by me. Below is some documentation and code examples.
-
-## Variables
-There are 2 types of variables, **strings** and **numbers**.
-
-**Number variables**
-`throw 12 rocks at x`
-is the equivalent of
-`let x = 12`
-You can replace `rocks` with `rock`, which is preferred when the value is 1. Example:
-`throw 1 rock at y`
-
-**String variables**
-`throw rock named "Hello world!" at x`
-is the equivalent of
-`let x = "Hello world!"`
-You are technically able to replace `rock` with `rocks`, but you shouldn't do so. Rockscript should always look gramatically correct.
+Rockscript is an esolang made by me. Below is some documentation and code examples.  
+  
+## Variables  
+There are 2 types of variables, **strings** and **numbers**.  
+  
+**Number variables**  
+`throw 12 rocks at x`  
+is the equivalent of  
+`let x = 12`  
+You can replace `rocks` with `rock`, which is preferred when the value is 1. Example:  
+`throw 1 rock at y`  
+  
+**String variables**  
+`throw rock named "Hello world!" at x`  
+is the equivalent of  
+`let x = "Hello world!"`  
+You are technically able to replace `rock` with `rocks`, but you shouldn't do so. Rockscript should always look gramatically correct.  
