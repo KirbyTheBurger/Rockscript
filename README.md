@@ -26,7 +26,7 @@ let x = "Hello world!"
 ```  
 You are technically able to replace `rock` with `rocks`, but you shouldn't do so. Rockscript should always look gramatically correct.  
   
-## Booleans  
+### Booleans  
 ```rockscript
 throw big rock at x
 throw small rock at y
