@@ -11,14 +11,22 @@ pub enum Value {
 
 pub struct Interpreter {
     pub variables: Vec<HashMap<String, Value>>,
+    pub functions: Vec<HashMap<String, Function>>,
     expressions: Vec<Expression>,
     pos: usize,
+}
+
+#[derive(Debug)]
+pub struct Function {
+    params: Vec<String>,
+    body: Vec<Expression>,
 }
 
 impl Interpreter {
     pub fn new(expressions: Vec<Expression>) -> Interpreter {
         let mut interpreter = Interpreter {
             variables: Vec::new(),
+            functions: Vec::new(),
             expressions,
             pos: 0,
         };
@@ -50,7 +58,10 @@ impl Interpreter {
             },
             Expression::BinaryOp{..} => {
                 self.eval_binary_op(expression);
-            }
+            },
+            Expression::FnDef {name, params, body} => {
+                self.define_function(name, params, body);
+            },
             _ => println!("unknown expression"),
         }
     
@@ -59,10 +70,20 @@ impl Interpreter {
 
     fn push_scope(&mut self) {
         self.variables.push(HashMap::new());
+        self.functions.push(HashMap::new());
     }
 
     fn pop_scope(&mut self) {
         self.variables.pop();
+        self.functions.pop();
+    }
+
+    fn define_function(&mut self, name: String, params: Vec<String>, body: Vec<Expression>) {
+        let function = Function {
+            params,
+            body,
+        };
+        self.insert_function(name, function);
     }
 
     fn get_variable(&self, name: String) -> Option<&Value> {
@@ -75,7 +96,7 @@ impl Interpreter {
         None
     }
 
-     fn get_variable_mut(&mut self, name: String) -> Option<&mut Value> {
+    fn get_variable_mut(&mut self, name: String) -> Option<&mut Value> {
         for hm in self.variables.iter_mut().rev() {
             if let Some(v) = hm.get_mut(&name) {
                 return Some(v);
@@ -87,6 +108,10 @@ impl Interpreter {
 
     fn insert_variable(&mut self, name: String, value: Value) {
         self.variables.last_mut().unwrap().insert(name, value);
+    }
+
+    fn insert_function(&mut self, name: String, function: Function) {
+        self.functions.last_mut().unwrap().insert(name, function);
     }
 
     fn eval_binary_op(&mut self, expression: Expression) {

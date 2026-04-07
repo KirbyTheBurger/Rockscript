@@ -109,3 +109,41 @@ split y from x
 present x
 ```  
 *output:* `4`
+  
+## Functions  
+Functions are defined using `carve instruction into`:
+```rockscript
+carve instruction into foo
+    throw 5 rocks at x
+enough
+```  
+pseudocode:  
+```rockscript
+fn foo() {
+    let x = 5
+}
+```  
+The `enough` keyword is essentially the same as a closing bracket, which tells the interpreter where the function ends.  
+  
+You're able to access arguments with the `retrieve` keyword:  
+```rockscript
+carve instruction into foo
+    retrieve bar
+enough
+```  
+pseudocode:  
+```rockscript
+fn foo(bar) {
+
+}
+```  
+  
+After retrieving the argument, you can use it like you would with any other variable:  
+```rockscript
+throw 5 rocks at x
+
+carve instruction into y
+    retrieve z
+    smash z into x
+enough
+```  

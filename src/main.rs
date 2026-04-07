@@ -18,6 +18,7 @@ fn main() {
     let mut interpreter = Interpreter::new(expressions);
     interpreter.run();
     println!("{:?}", interpreter.variables);
+    println!("{:?}", interpreter.functions);
 }
 
 fn get_input() -> String {
