@@ -12,6 +12,11 @@ pub enum Expression {
         name: String,
         value: Box<Expression>,
     },
+    FnDef {
+        name: String,
+        params: Vec<String>,
+        body: Vec<Expression>,
+    },
 
     BinaryOp {
         operation: BinaryOperation,
@@ -76,6 +81,7 @@ impl Parser {
                     Expression::Boolean(b)
                 }
                 Token::Present => self.read_print(),
+                Token::Carve => self.read_fn_def(),
                 Token::Identifier(s) => {
                     self.advance();
                     Expression::Identifier(s)
@@ -90,6 +96,51 @@ impl Parser {
         } else {
             self.advance();
             Expression::Error
+        }
+    }
+
+    fn read_fn_def(&mut self) -> Expression {
+        self.advance();
+
+        if !matches!(self.current(), Some(Token::Instruction)) {
+            return Expression::Error;
+        }
+        self.advance();
+        if !matches!(self.current(), Some(Token::Into)) {
+            return Expression::Error;
+        }
+        self.advance();
+
+        let name;
+        if let Some(Token::Identifier(s)) = self.current() {
+            name = s;
+        } else {
+            return Expression::Error;
+        }
+        self.advance();
+
+        let mut params = Vec::new();
+        while let Some(Token::Retrieve) = self.current() {
+            self.advance();
+
+            if let Some(Token::Identifier(s)) = self.current() {
+                params.push(s);
+                self.advance();
+            } else {
+                return Expression::Error;
+            }
+        }
+
+        let mut body = Vec::new();
+        while !matches!(self.current(), Some(Token::Enough)) {
+            body.push(self.parse_expression());
+        }
+        self.advance();
+
+        Expression::FnDef {
+            name,
+            params,
+            body
         }
     }
 

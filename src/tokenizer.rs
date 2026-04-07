@@ -21,6 +21,11 @@ pub enum Token {
     Split,
     From,
 
+    Carve,
+    Instruction,
+    Retrieve,
+    Enough,
+
     Error,
     EOF,
 }
@@ -124,6 +129,10 @@ impl Lexer {
             "from" => Token::From,
             "big" => Token::Boolean(true),
             "small" => Token::Boolean(false),
+            "carve" => Token::Carve,
+            "instruction" => Token::Instruction,
+            "retrieve" => Token::Retrieve,
+            "enough" => Token::Enough,
             _ => Token::Identifier(identifier),
         }
     }
