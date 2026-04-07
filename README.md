@@ -201,14 +201,14 @@ A comparison evaluates to either big or small. These are all comparisons:
 ## Weighing  
 By weighing a value against another, you can see which is heavier:  
 ```rockscript
-throw big rock at x
-throw small rock at y
+throw 3 rocks at x
+throw 2 rocks at y
 present weigh x against y
 ```  
 *output:* `big`  
 Pseudocode:  
 ```rockscript
-let x = true
-let y = false
+let x = 3
+let y = 2
 print(x >= y)
 ```  
