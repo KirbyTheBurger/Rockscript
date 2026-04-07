@@ -1,5 +1,5 @@
 ## Variables  
-There are 3 types of variables, **strings**, **boleans** and **numbers**.  
+There are 3 types of variables, **strings**, **booleans** and **numbers**.  
   
 ### Numbers  
 ```rockscript
