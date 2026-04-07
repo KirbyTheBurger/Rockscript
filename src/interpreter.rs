@@ -16,7 +16,7 @@ pub struct Interpreter {
     pos: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Function {
     params: Vec<String>,
     body: Vec<Expression>,
@@ -48,7 +48,7 @@ impl Interpreter {
         }
     }
 
-    fn eval_expression(&mut self, expression: Expression) {
+    fn eval_expression(&mut self, expression: Expression) -> Option<Value> {
         match expression {
             Expression::VarDef { name, value } => {
                 self.define_var(name, *value);
@@ -62,10 +62,41 @@ impl Interpreter {
             Expression::FnDef {name, params, body} => {
                 self.define_function(name, params, body);
             },
+            Expression::FnCall {name, args} => {
+                self.eval_function(name, args);
+            },
+            Expression::Return(e) => {
+                return Some(self.eval_value(*e));
+            },
             _ => println!("unknown expression"),
         }
-    
+        
         self.advance();
+        None
+    }
+
+    fn eval_function(&mut self, name: String, args: Vec<Expression>) -> Option<Value> {
+        let function = self.get_function(name).cloned();
+        if let Some(f) = function {
+            self.push_scope();
+
+            for (param, value) in f.params.iter().zip(args.iter()) {
+                self.define_var(param.clone(), value.clone());
+            }
+
+            let mut return_value = None;
+            for e in &f.body {
+                if let Some(v) = self.eval_expression(e.clone()) {
+                    return_value = Some(v);
+                    break;
+                }
+            }
+
+            self.pop_scope();
+            return return_value;
+        } else {
+            panic!("unknown function called")
+        }
     }
 
     fn push_scope(&mut self) {
@@ -103,6 +134,16 @@ impl Interpreter {
             }
         }
 
+        None
+    }
+
+    fn get_function(&mut self, name: String) -> Option<&Function> {
+        for hm in self.functions.iter().rev() {
+            if let Some(v) = hm.get(&name) {
+                return Some(v)
+            }
+        }
+        
         None
     }
 
@@ -150,6 +191,12 @@ impl Interpreter {
                     None => panic!("unknown variable"),
                 }
             },
+            Expression::FnCall {name, args} => {
+                match self.eval_function(name, args) {
+                    Some(v) => v,
+                    None => panic!("expected function to return value"),
+                }
+            }
             _ => panic!("unknown value or not yet implemented"),
         }
     }

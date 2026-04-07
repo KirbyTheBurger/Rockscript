@@ -147,3 +147,38 @@ carve instruction into y
     smash z into x
 enough
 ```  
+  
+You can return a value from a function with `engrave`:  
+```rockscript
+carve instruction into foo
+    engrave "Hello world!"
+enough
+```  
+pseudocode:  
+```rockscript
+fn foo() {
+    return "Hello world!"
+}
+```  
+  
+To call functions, use `follow`:  
+```rockscript
+carve instruction into foo
+    engrave 5
+enough
+
+present follow foo
+```  
+*output:* `5`  
+  
+Pass arguments into the function with `with` and `and`:  
+```rockscript
+carve instruction into x
+    retrieve y
+    smash 5 into y
+    engrave y
+enough
+
+present follow x with 3
+```  
+*output:* `8`  

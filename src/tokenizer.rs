@@ -25,6 +25,9 @@ pub enum Token {
     Instruction,
     Retrieve,
     Enough,
+    Follow,
+    And,
+    Engrave,
 
     Error,
     EOF,
@@ -133,6 +136,9 @@ impl Lexer {
             "instruction" => Token::Instruction,
             "retrieve" => Token::Retrieve,
             "enough" => Token::Enough,
+            "follow" => Token::Follow,
+            "and" => Token::And,
+            "engrave" => Token::Engrave,
             _ => Token::Identifier(identifier),
         }
     }

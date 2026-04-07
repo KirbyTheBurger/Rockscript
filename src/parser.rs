@@ -12,11 +12,17 @@ pub enum Expression {
         name: String,
         value: Box<Expression>,
     },
+
     FnDef {
         name: String,
         params: Vec<String>,
         body: Vec<Expression>,
     },
+    FnCall {
+        name: String,
+        args: Vec<Expression>,
+    },
+    Return(Box<Expression>),
 
     BinaryOp {
         operation: BinaryOperation,
@@ -86,7 +92,12 @@ impl Parser {
                     self.advance();
                     Expression::Identifier(s)
                 },
+                Token::Follow => self.read_fn_call(),
                 Token::Smash | Token::Chip | Token::Mate | Token::Split => self.read_binary_op(),
+                Token::Engrave => {
+                    self.advance();
+                    Expression::Return(Box::new(self.parse_expression()))
+                }
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -96,6 +107,29 @@ impl Parser {
         } else {
             self.advance();
             Expression::Error
+        }
+    }
+
+    fn read_fn_call(&mut self) -> Expression {
+        self.advance();
+        
+        let name;
+        if let Some(Token::Identifier(s)) = self.current() {
+            name = s;
+        } else {
+            return Expression::Error;
+        }
+        self.advance();
+
+        let mut args = Vec::new();
+        while let Some(Token::With | Token::And) = self.current() {
+            self.advance();
+            args.push(self.parse_expression());
+        }
+
+        Expression::FnCall {
+            name,
+            args
         }
     }
 
