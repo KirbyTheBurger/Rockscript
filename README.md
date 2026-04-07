@@ -194,3 +194,21 @@ enough
 present follow add with 5 and 6
 ```
 *output:* `11`  
+  
+### Comparisons  
+A comparison evaluates to either big or small. These are all comparisons:  
+  
+## Weighing  
+By weighing a value against another, you can see which is heavier:  
+```rockscript
+throw big rock at x
+throw small rock at y
+present weigh x against y
+```  
+*output:* `big`  
+Pseudocode:  
+```rockscript
+let x = true
+let y = false
+print(x >= y)
+```  

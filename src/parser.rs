@@ -30,10 +30,21 @@ pub enum Expression {
         value: Box<Expression>,
     },
 
+    Comparison {
+        operation: CmpOperation,
+        left: Box<Expression>,
+        right: Box<Expression>,
+    },
+
     Print(Box<Expression>),
 
     Error,
     EOF,
+}
+
+#[derive(Debug, Clone)]
+pub enum CmpOperation {
+    Weigh,
 }
 
 #[derive(Debug, Clone)]
@@ -97,7 +108,8 @@ impl Parser {
                 Token::Engrave => {
                     self.advance();
                     Expression::Return(Box::new(self.parse_expression()))
-                }
+                },
+                Token::Weigh => self.read_comparison(),
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -107,6 +119,26 @@ impl Parser {
         } else {
             self.advance();
             Expression::Error
+        }
+    }
+
+    fn read_comparison(&mut self) -> Expression {
+        let operation = CmpOperation::from_token(self.current().unwrap());
+        self.advance();
+
+        let left = Box::new(self.parse_expression());
+        
+        if !matches!(self.current(), Some(Token::Against)) {
+            return Expression::Error;
+        }
+        self.advance();
+
+        let right = Box::new(self.parse_expression());
+
+        Expression::Comparison {
+            operation,
+            left,
+            right
         }
     }
 
@@ -268,7 +300,16 @@ impl BinaryOperation {
             Token::Chip => BinaryOperation::Sub,
             Token::Mate => BinaryOperation::Mul,
             Token::Split => BinaryOperation::Div,
-            _ => panic!("cant parse token into binary operation, did you forget to implement it?"),
+            _ => panic!("cant parse token into binary operation, this shouldnt panic unless theres a bug in the interpreter"),
+        }
+    }
+}
+
+impl CmpOperation {
+    fn from_token(token :Token) -> CmpOperation {
+        match token {
+            Token::Weigh => CmpOperation::Weigh,
+            _ => panic!("cant parse token into binary operation, this shouldnt panic unless theres a bug in the interpreter"),
         }
     }
 }

@@ -29,6 +29,9 @@ pub enum Token {
     And,
     Engrave,
 
+    Weigh,
+    Against,
+
     Error,
     EOF,
 }
@@ -139,6 +142,8 @@ impl Lexer {
             "follow" => Token::Follow,
             "and" => Token::And,
             "engrave" => Token::Engrave,
+            "weigh" => Token::Weigh,
+            "against" => Token::Against,
             _ => Token::Identifier(identifier),
         }
     }

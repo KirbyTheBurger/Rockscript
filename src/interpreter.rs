@@ -1,8 +1,8 @@
 use std::{collections::HashMap, ops::{AddAssign, DivAssign, MulAssign, SubAssign}};
 
-use crate::parser::{BinaryOperation, Expression};
+use crate::parser::{BinaryOperation, CmpOperation, Expression};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Number(f64),
     String(String),
@@ -196,7 +196,17 @@ impl Interpreter {
                     Some(v) => v,
                     None => panic!("expected function to return value"),
                 }
-            }
+            },
+            Expression::Comparison {operation, left, right} => {
+                match operation {
+                    CmpOperation::Weigh => {
+                        let left_value = self.eval_value(*left);
+                        let right_value = self.eval_value(*right);
+
+                        return Value::Boolean(left_value >= right_value);
+                    }
+                }
+            },
             _ => panic!("unknown value or not yet implemented"),
         }
     }
@@ -220,7 +230,10 @@ impl ToString for Value {
         match self {
             Value::Number(n) => n.to_string(),
             Value::String(s) => s.clone(),
-            Value::Boolean(b) => b.to_string(),
+            Value::Boolean(b) => match b {
+                true => String::from("big"),
+                false => String::from("small"),
+            },
         }
     }
 }
