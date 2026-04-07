@@ -29,11 +29,16 @@ pub enum Expression {
         variable: String,
         value: Box<Expression>,
     },
-
     Comparison {
         operation: CmpOperation,
         left: Box<Expression>,
         right: Box<Expression>,
+    },
+
+    If {
+        condition: Box<Expression>,
+        body: Vec<Expression>,
+        else_: Option<Vec<Expression>>,
     },
 
     Print(Box<Expression>),
@@ -110,6 +115,7 @@ impl Parser {
                     Expression::Return(Box::new(self.parse_expression()))
                 },
                 Token::Weigh => self.read_comparison(),
+                Token::Inspect => self.read_if(),
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -119,6 +125,46 @@ impl Parser {
         } else {
             self.advance();
             Expression::Error
+        }
+    }
+
+    fn read_if(&mut self) -> Expression {
+        self.advance();
+        let condition = Box::new(self.parse_expression());
+
+        let mut body = Vec::new();
+        while !matches!(self.current(), Some(Token::Refine | Token::Enough)) {
+            body.push(self.parse_expression());
+        }
+
+        match self.current() {
+            Some(Token::Enough) => {
+                return Expression::If {
+                    condition,
+                    body,
+                    else_: None,
+                }
+            },
+            Some(Token::Refine) => {
+                self.advance();
+
+                let mut else_ = Vec::new();
+                if let Some(Token::Inspect) = self.current() {
+                    else_.push(self.read_if());
+                } else {
+                    while !matches!(self.current(), Some(Token::Enough)) {
+                        else_.push(self.parse_expression());
+                    }
+                    self.advance();
+                }
+
+                return Expression::If {
+                    condition,
+                    body,
+                    else_: Some(else_)
+                }
+            },
+            _ => return Expression::Error,
         }
     }
 

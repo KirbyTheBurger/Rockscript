@@ -68,11 +68,36 @@ impl Interpreter {
             Expression::Return(e) => {
                 return Some(self.eval_value(*e));
             },
+            Expression::If { condition, body, else_ } => {
+                self.eval_if(condition, body, else_);
+            }
             _ => println!("unknown expression"),
         }
         
         self.advance();
         None
+    }
+
+    fn eval_if(&mut self, condition: Box<Expression>, body: Vec<Expression>, else_: Option<Vec<Expression>>) {
+        if let Value::Boolean(true) = self.eval_value(*condition) {
+            self.push_scope();
+
+            for e in body {
+                self.eval_expression(e);
+            }
+
+            self.pop_scope();
+        } else {
+            if let Some(v) = else_ {
+                self.push_scope();
+
+                for e in v {
+                    self.eval_expression(e);
+                }
+
+                self.pop_scope();
+            }
+        }
     }
 
     fn eval_function(&mut self, name: String, args: Vec<Expression>) -> Option<Value> {

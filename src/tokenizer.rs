@@ -32,6 +32,9 @@ pub enum Token {
     Weigh,
     Against,
 
+    Inspect,
+    Refine,
+
     Error,
     EOF,
 }
@@ -144,6 +147,8 @@ impl Lexer {
             "engrave" => Token::Engrave,
             "weigh" => Token::Weigh,
             "against" => Token::Against,
+            "inspect" => Token::Inspect,
+            "refine" => Token::Refine,
             _ => Token::Identifier(identifier),
         }
     }

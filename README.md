@@ -212,3 +212,40 @@ let x = 3
 let y = 2
 print(x >= y)
 ```  
+  
+## If statements  
+```rockscript
+inspect big
+    present "Hello world"
+enough
+```  
+*output:* `Hello world`  
+Pseudocode:  
+```rockscript
+if (true) {
+    print("Hello world")
+}
+```  
+  
+```rockscript
+throw 4 rocks at x
+throw 5 rocks at y
+
+inspect weigh x against y
+    present "x >= y"
+refine
+    present "x < y"
+enough
+```  
+*output:* `x < y`  
+Pseudocode:  
+```rockscript
+let x = 4
+let y = 5
+
+if (x >= y) {
+    print("x >= y")
+} else {
+    print("x < y")
+}
+```  
