@@ -182,3 +182,15 @@ enough
 present follow x with 3
 ```  
 *output:* `8`  
+
+```rockscript
+carve instruction into add
+  retrieve x
+  retrieve y
+  smash x into y
+  engrave y
+enough
+
+present follow add with 5 and 6
+```
+*output:* `11`  
