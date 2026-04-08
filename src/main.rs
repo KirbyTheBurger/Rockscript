@@ -23,14 +23,22 @@ fn main() {
                 let source = fs::read_to_string(file_name);
                 match source {
                     Ok(c) => {
+                        let debug = matches!(args.get(3).map(String::as_str), Some("--debug"));
+
                         let mut lexer = Lexer::new(c.as_str());
                         let tokens = lexer.tokenize();
+                        if debug { println!("Tokens: {:?}", tokens); }
 
                         let mut parser = Parser::new(tokens);
                         let expressions = parser.parse();
+                        if debug { println!("Expressions: {:?}", expressions); }
 
                         let mut interpreter = Interpreter::new(expressions);
                         interpreter.run();
+                        if debug {
+                            println!("Variables: {:?}", interpreter.variables);
+                            println!("Functions: {:?}", interpreter.functions);
+                        }
                     }
                     Err(_) => eprintln!("invalid file name"),
                 }

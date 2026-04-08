@@ -108,7 +108,10 @@ impl Lexer {
 
         match number.parse::<f64>() {
             Ok(n) => Token::Number(n),
-            _ => Token::Error,
+            _ => {
+                eprintln!("Failed to parse number");
+                Token::Error
+            },
         }
     }
 

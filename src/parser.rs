@@ -126,15 +126,17 @@ impl Parser {
                 Token::Destroy => {
                     self.advance();
                     Expression::Break
-                }
+                },
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
+                    eprintln!("Tried to parse invalid token");
                     Expression::Error
                 },
             }
         } else {
             self.advance();
+            eprintln!("Token is `None`");
             Expression::Error
         }
     }
@@ -150,6 +152,8 @@ impl Parser {
 
         match self.current() {
             Some(Token::Enough) => {
+                self.advance();
+
                 return Expression::If {
                     condition,
                     body,
@@ -175,13 +179,17 @@ impl Parser {
                     else_: Some(else_)
                 }
             },
-            _ => return Expression::Error,
+            _ => {
+                eprintln!("Failed parsing end of if statement. This shouldnt happen and if it does its a bug in the interpreter.");
+                return Expression::Error;
+            },
         }
     }
 
     fn read_while(&mut self) -> Expression {
         self.advance();
         if !matches!(self.current(), Some(Token::While)) {
+            eprintln!("Missing `while` in loop");
             return Expression::Error;
         }
         self.advance();
@@ -207,6 +215,7 @@ impl Parser {
         let left = Box::new(self.parse_expression());
         
         if !matches!(self.current(), Some(Token::Against)) {
+            eprintln!("Incorrect keyword inside of comparison");
             return Expression::Error;
         }
         self.advance();
@@ -227,6 +236,7 @@ impl Parser {
         if let Some(Token::Identifier(s)) = self.current() {
             name = s;
         } else {
+            eprintln!("Missing identifier inside of function call");
             return Expression::Error;
         }
         self.advance();
@@ -247,10 +257,12 @@ impl Parser {
         self.advance();
 
         if !matches!(self.current(), Some(Token::Instruction)) {
+            eprintln!("Missing `instruction` inside of function definition");
             return Expression::Error;
         }
         self.advance();
         if !matches!(self.current(), Some(Token::Into)) {
+            eprintln!("Missing `into` inside of function definition");
             return Expression::Error;
         }
         self.advance();
@@ -259,6 +271,7 @@ impl Parser {
         if let Some(Token::Identifier(s)) = self.current() {
             name = s;
         } else {
+            eprintln!("Missing identifier inside of function definition");
             return Expression::Error;
         }
         self.advance();
@@ -271,6 +284,7 @@ impl Parser {
                 params.push(s);
                 self.advance();
             } else {
+                eprintln!("Missing identifier after `retrieve` inside of function definition");
                 return Expression::Error;
             }
         }
@@ -294,6 +308,7 @@ impl Parser {
 
         let value = self.parse_expression();
         if !matches!(self.current(), Some(Token::Into | Token::Off | Token::With | Token::From)) {
+            eprintln!("Incorrect keyword `{:?}` inside of binary operation `{:?}`", self.current(), op_keyword);
             return Expression::Error;
         }
 
@@ -308,6 +323,7 @@ impl Parser {
                 value: Box::new(value),
             }
         } else {
+            eprintln!("Missing second identifier inside of binary operation `{:?}`", op_keyword);
             Expression::Error
         }
     }
@@ -326,6 +342,7 @@ impl Parser {
             value = Box::new(self.parse_expression());
 
             if !matches!(self.current(), Some(Token::Rock)) {
+                eprintln!("Missing `Rock(s)` inside variable definition");
                 return Expression::Error;
             }
 
@@ -334,6 +351,7 @@ impl Parser {
             self.advance();
 
             if !matches!(self.current(), Some(Token::Named)) {
+                eprintln!("Missing `Named` inside string variable definition");
                 return Expression::Error;
             }
 
@@ -343,6 +361,7 @@ impl Parser {
         }
 
         if !matches!(self.current(), Some(Token::At)) {
+            eprintln!("Missing `at` inside variable definition");
             return Expression::Error;
         }
 
@@ -351,7 +370,10 @@ impl Parser {
         let name;
         match self.current() {
             Some(Token::Identifier(s)) => name = s,
-            _ => return Expression::Error,
+            _ => {
+                eprintln!("Missing identifier inside of variable definition");
+                return Expression::Error
+            },
         }
 
         self.advance();
