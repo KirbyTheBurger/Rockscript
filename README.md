@@ -249,3 +249,46 @@ if (x >= y) {
     print("x < y")
 }
 ```  
+  
+## While statements  
+```rockscript
+throw 0 rocks at x
+roll while weigh 100 against x
+    smash 1 into x
+    present x
+    inspect weigh x against 50
+        present "halfway"
+    enough
+enough
+```  
+Pseudocode:  
+```rockscript
+let x = 0
+while (100 >= x) {
+    x += 1
+    print(x)
+    if (x >= 50) {
+        print("halfway")
+    }
+}
+```  
+  
+```rockscript
+throw 1 rock at x
+roll while big
+    smash 1 into x
+    inspect weigh 20 against x
+        destroy
+    enough
+enough
+```  
+Pseudocode:  
+```rockscript
+let x = 1
+while (true) {
+    x += 1
+    if (20 >= x) {
+        break
+    }
+}
+```  

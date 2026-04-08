@@ -1,4 +1,4 @@
-use crate::tokenizer::Token;
+use crate::lexer::Token;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
@@ -40,6 +40,12 @@ pub enum Expression {
         body: Vec<Expression>,
         else_: Option<Vec<Expression>>,
     },
+
+    While {
+        condition: Box<Expression>,
+        body: Vec<Expression>,
+    },
+    Break,
 
     Print(Box<Expression>),
 
@@ -116,6 +122,11 @@ impl Parser {
                 },
                 Token::Weigh => self.read_comparison(),
                 Token::Inspect => self.read_if(),
+                Token::Roll => self.read_while(),
+                Token::Destroy => {
+                    self.advance();
+                    Expression::Break
+                }
                 Token::EOF => Expression::EOF,
                 _ => {
                     self.advance();
@@ -165,6 +176,27 @@ impl Parser {
                 }
             },
             _ => return Expression::Error,
+        }
+    }
+
+    fn read_while(&mut self) -> Expression {
+        self.advance();
+        if !matches!(self.current(), Some(Token::While)) {
+            return Expression::Error;
+        }
+        self.advance();
+
+        let condition = Box::new(self.parse_expression());
+
+        let mut body = Vec::new();
+        while !matches!(self.current(), Some(Token::Enough)) {
+            body.push(self.parse_expression());
+        }
+        self.advance();
+
+        Expression::While {
+            condition,
+            body,
         }
     }
 

@@ -22,6 +22,12 @@ pub struct Function {
     body: Vec<Expression>,
 }
 
+enum ControlFlow {
+    None,
+    Break,
+    Return(Value),
+}
+
 impl Interpreter {
     pub fn new(expressions: Vec<Expression>) -> Interpreter {
         let mut interpreter = Interpreter {
@@ -48,13 +54,13 @@ impl Interpreter {
         }
     }
 
-    fn eval_expression(&mut self, expression: Expression) -> Option<Value> {
+    fn eval_expression(&mut self, expression: Expression) -> ControlFlow {
         match expression {
             Expression::VarDef { name, value } => {
                 self.define_var(name, *value);
             },
             Expression::Print(v) => {
-                println!("{}", self.eval_value(*v).to_string())
+                println!("{}", self.eval_value(&v).to_string())
             },
             Expression::BinaryOp{..} => {
                 self.eval_binary_op(expression);
@@ -66,20 +72,38 @@ impl Interpreter {
                 self.eval_function(name, args);
             },
             Expression::Return(e) => {
-                return Some(self.eval_value(*e));
+                return ControlFlow::Return(self.eval_value(&e));
             },
             Expression::If { condition, body, else_ } => {
                 self.eval_if(condition, body, else_);
-            }
+            },
+            Expression::While { condition, body } => {
+                self.eval_while(condition, body);
+            },
+            Expression::Break => return ControlFlow::Break,
             _ => println!("unknown expression"),
         }
         
         self.advance();
-        None
+        ControlFlow::None
+    }
+
+    fn eval_while(&mut self, condition: Box<Expression>, body: Vec<Expression>) {
+        'outer: while matches!(self.eval_value(&condition), Value::Boolean(true)) {
+            self.push_scope();
+
+            for e in &body {
+                if let ControlFlow::Break = self.eval_expression(e.clone()) {
+                    break 'outer;
+                }
+            }
+
+            self.pop_scope();
+        }
     }
 
     fn eval_if(&mut self, condition: Box<Expression>, body: Vec<Expression>, else_: Option<Vec<Expression>>) {
-        if let Value::Boolean(true) = self.eval_value(*condition) {
+        if let Value::Boolean(true) = self.eval_value(&condition) {
             self.push_scope();
 
             for e in body {
@@ -111,7 +135,7 @@ impl Interpreter {
 
             let mut return_value = None;
             for e in &f.body {
-                if let Some(v) = self.eval_expression(e.clone()) {
+                if let ControlFlow::Return(v) = self.eval_expression(e.clone()) {
                     return_value = Some(v);
                     break;
                 }
@@ -184,7 +208,7 @@ impl Interpreter {
         if let Expression::BinaryOp {
             operation, variable, value
         } = expression {
-            let evaluated = self.eval_value(*value);
+            let evaluated = self.eval_value(&value);
             match operation {
                 BinaryOperation::Add => {
                     *self.get_variable_mut(variable).unwrap() += evaluated;
@@ -204,20 +228,20 @@ impl Interpreter {
         }
     }
 
-    fn eval_value(&mut self, expression: Expression) -> Value {
+    fn eval_value(&mut self, expression: &Expression) -> Value {
         match expression {
-            Expression::Number(n) => Value::Number(n),
-            Expression::String(s) => Value::String(s),
-            Expression::Boolean(b) => Value::Boolean(b),
+            Expression::Number(n) => Value::Number(*n),
+            Expression::String(s) => Value::String(s.clone()),
+            Expression::Boolean(b) => Value::Boolean(*b),
             Expression::Identifier(s) => {
-                let value = self.get_variable(s);
+                let value = self.get_variable(s.clone());
                 match value {
                     Some(v) => v.clone(),
                     None => panic!("unknown variable"),
                 }
             },
             Expression::FnCall {name, args} => {
-                match self.eval_function(name, args) {
+                match self.eval_function(name.clone(), args.clone()) {
                     Some(v) => v,
                     None => panic!("expected function to return value"),
                 }
@@ -225,8 +249,8 @@ impl Interpreter {
             Expression::Comparison {operation, left, right} => {
                 match operation {
                     CmpOperation::Weigh => {
-                        let left_value = self.eval_value(*left);
-                        let right_value = self.eval_value(*right);
+                        let left_value = self.eval_value(left);
+                        let right_value = self.eval_value(right);
 
                         return Value::Boolean(left_value >= right_value);
                     }
@@ -237,7 +261,7 @@ impl Interpreter {
     }
 
     fn define_var(&mut self, name: String, value: Expression) {
-        let evaluated = self.eval_value(value);
+        let evaluated = self.eval_value(&value);
         self.insert_variable(name, evaluated);
     }
 

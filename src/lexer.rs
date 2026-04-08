@@ -35,6 +35,10 @@ pub enum Token {
     Inspect,
     Refine,
 
+    Roll,
+    While,
+    Destroy,
+
     Error,
     EOF,
 }
@@ -149,6 +153,9 @@ impl Lexer {
             "against" => Token::Against,
             "inspect" => Token::Inspect,
             "refine" => Token::Refine,
+            "roll" => Token::Roll,
+            "while" => Token::While,
+            "destroy" => Token::Destroy,
             _ => Token::Identifier(identifier),
         }
     }

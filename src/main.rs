@@ -1,8 +1,8 @@
 use std::io;
 
-use crate::{interpreter::Interpreter, parser::Parser, tokenizer::Lexer};
+use crate::{interpreter::Interpreter, parser::Parser, lexer::Lexer};
 
-mod tokenizer;
+mod lexer;
 mod parser;
 mod interpreter;
 
