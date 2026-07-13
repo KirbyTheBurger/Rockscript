@@ -46,7 +46,7 @@ impl Interpreter {
         loop {
             let current = self.current();
 
-            if let Some(Expression::EOF) | None = current {
+            if matches!(current, None) {
                 break;
             }
 
@@ -231,7 +231,7 @@ impl Interpreter {
     fn eval_value(&mut self, expression: &Expression) -> Value {
         match expression {
             Expression::Number(n) => Value::Number(*n),
-            Expression::String(s) => Value::String(s.clone()),
+            Expression::Str(s) => Value::String(s.clone()),
             Expression::Boolean(b) => Value::Boolean(*b),
             Expression::Identifier(s) => {
                 let value = self.get_variable(s.clone());

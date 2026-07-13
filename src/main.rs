@@ -1,6 +1,8 @@
 use std::{env, fs};
 
-use crate::{interpreter::Interpreter, lexer::Lexer, parser::Parser};
+use logos::Logos;
+
+use crate::{interpreter::Interpreter, lexer::Token, parser::Parser};
 
 mod lexer;
 mod parser;
@@ -25,8 +27,8 @@ fn main() {
                     Ok(c) => {
                         let debug = matches!(args.get(3).map(String::as_str), Some("--debug"));
 
-                        let mut lexer = Lexer::new(c.as_str());
-                        let tokens = lexer.tokenize();
+                        let lexer = Token::lexer(&c);
+                        let tokens: Vec<Token> = lexer.filter_map(Result::ok).collect();
                         if debug { println!("Tokens: {:?}", tokens); }
 
                         let mut parser = Parser::new(tokens);

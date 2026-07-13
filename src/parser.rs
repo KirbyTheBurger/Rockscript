@@ -1,9 +1,10 @@
 use crate::lexer::Token;
+use Expression::*;
 
 #[derive(Debug, Clone)]
 pub enum Expression {
     Number(f64),
-    String(String),
+    Str(String),
     Boolean(bool),
 
     Identifier(String),
@@ -50,7 +51,6 @@ pub enum Expression {
     Print(Box<Expression>),
 
     Error,
-    EOF,
 }
 
 #[derive(Debug, Clone)]
@@ -84,152 +84,146 @@ impl Parser {
 
         loop {
             let expr = self.parse_expression();
-            if !matches!(expr, Expression::EOF) {
-                expressions.push(expr);
+            if let Some(e) = expr {
+                expressions.push(e);
             } else { break; }
         }
 
         expressions
     }
 
-    fn parse_expression(&mut self) -> Expression {
+    fn parse_expression(&mut self) -> Option<Expression> {
         if let Some(e) = self.current() {
             match e {
                 Token::Throw => self.read_var_def(),
                 Token::Number(n) => {
-                    self.advance();
-                    Expression::Number(n)
+                    self.expr(Number(n))
                 },
                 Token::String(s) => {
-                    self.advance();
-                    Expression::String(s)
+                    self.expr(Str(s))
                 },
-                Token::Boolean(b) => {
-                    self.advance();
-                    Expression::Boolean(b)
-                }
+                Token::True => {
+                    self.expr(Boolean(true))
+                },
+                Token::False => {
+                    self.expr(Boolean(false))
+                },
                 Token::Present => self.read_print(),
                 Token::Carve => self.read_fn_def(),
                 Token::Identifier(s) => {
-                    self.advance();
-                    Expression::Identifier(s)
+                    self.expr(Identifier(s))
                 },
                 Token::Follow => self.read_fn_call(),
                 Token::Smash | Token::Chip | Token::Mate | Token::Split => self.read_binary_op(),
                 Token::Engrave => {
-                    self.advance();
-                    Expression::Return(Box::new(self.parse_expression()))
+                    let e = self.parse_expression()?;
+                    self.expr(Return(Box::new(e)))
                 },
                 Token::Weigh => self.read_comparison(),
                 Token::Inspect => self.read_if(),
                 Token::Roll => self.read_while(),
                 Token::Destroy => {
-                    self.advance();
-                    Expression::Break
+                    self.expr(Break)
                 },
-                Token::EOF => Expression::EOF,
                 _ => {
-                    self.advance();
                     eprintln!("Tried to parse invalid token");
-                    Expression::Error
+                    self.expr(Error)
                 },
             }
         } else {
-            self.advance();
-            eprintln!("Token is `None`");
-            Expression::Error
+            None
         }
     }
 
-    fn read_if(&mut self) -> Expression {
+    fn read_if(&mut self) -> Option<Expression> {
         self.advance();
-        let condition = Box::new(self.parse_expression());
+        let condition = Box::new(self.parse_expression()?);
 
         let mut body = Vec::new();
         while !matches!(self.current(), Some(Token::Refine | Token::Enough)) {
-            body.push(self.parse_expression());
+            body.push(self.parse_expression()?);
         }
 
         match self.current() {
             Some(Token::Enough) => {
                 self.advance();
 
-                return Expression::If {
+                return Some(Expression::If {
                     condition,
                     body,
                     else_: None,
-                }
+                })
             },
             Some(Token::Refine) => {
                 self.advance();
 
                 let mut else_ = Vec::new();
                 if let Some(Token::Inspect) = self.current() {
-                    else_.push(self.read_if());
+                    else_.push(self.read_if()?);
                 } else {
                     while !matches!(self.current(), Some(Token::Enough)) {
-                        else_.push(self.parse_expression());
+                        else_.push(self.parse_expression()?);
                     }
                     self.advance();
                 }
 
-                return Expression::If {
+                return Some(Expression::If {
                     condition,
                     body,
                     else_: Some(else_)
-                }
+                })
             },
             _ => {
                 eprintln!("Failed parsing end of if statement. This shouldnt happen and if it does its a bug in the interpreter.");
-                return Expression::Error;
+                return Some(Expression::Error);
             },
         }
     }
 
-    fn read_while(&mut self) -> Expression {
+    fn read_while(&mut self) -> Option<Expression> {
         self.advance();
         if !matches!(self.current(), Some(Token::While)) {
             eprintln!("Missing `while` in loop");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
         self.advance();
 
-        let condition = Box::new(self.parse_expression());
+        let condition = Box::new(self.parse_expression()?);
 
         let mut body = Vec::new();
         while !matches!(self.current(), Some(Token::Enough)) {
-            body.push(self.parse_expression());
+            body.push(self.parse_expression()?);
         }
         self.advance();
 
-        Expression::While {
+        Some(Expression::While {
             condition,
             body,
-        }
+        })
     }
 
-    fn read_comparison(&mut self) -> Expression {
+    fn read_comparison(&mut self) -> Option<Expression> {
         let operation = CmpOperation::from_token(self.current().unwrap());
         self.advance();
 
-        let left = Box::new(self.parse_expression());
+        let left = Box::new(self.parse_expression()?);
         
         if !matches!(self.current(), Some(Token::Against)) {
             eprintln!("Incorrect keyword inside of comparison");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
         self.advance();
 
-        let right = Box::new(self.parse_expression());
+        let right = Box::new(self.parse_expression()?);
 
-        Expression::Comparison {
+        Some(Expression::Comparison {
             operation,
             left,
             right
-        }
+        })
     }
 
-    fn read_fn_call(&mut self) -> Expression {
+    fn read_fn_call(&mut self) -> Option<Expression> {
         self.advance();
         
         let name;
@@ -237,33 +231,33 @@ impl Parser {
             name = s;
         } else {
             eprintln!("Missing identifier inside of function call");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
         self.advance();
 
         let mut args = Vec::new();
         while let Some(Token::With | Token::And) = self.current() {
             self.advance();
-            args.push(self.parse_expression());
+            args.push(self.parse_expression()?);
         }
 
-        Expression::FnCall {
+        Some(Expression::FnCall {
             name,
             args
-        }
+        })
     }
 
-    fn read_fn_def(&mut self) -> Expression {
+    fn read_fn_def(&mut self) -> Option<Expression> {
         self.advance();
 
         if !matches!(self.current(), Some(Token::Instruction)) {
             eprintln!("Missing `instruction` inside of function definition");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
         self.advance();
         if !matches!(self.current(), Some(Token::Into)) {
             eprintln!("Missing `into` inside of function definition");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
         self.advance();
 
@@ -272,7 +266,7 @@ impl Parser {
             name = s;
         } else {
             eprintln!("Missing identifier inside of function definition");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
         self.advance();
 
@@ -285,31 +279,31 @@ impl Parser {
                 self.advance();
             } else {
                 eprintln!("Missing identifier after `retrieve` inside of function definition");
-                return Expression::Error;
+                return Some(Expression::Error);
             }
         }
 
         let mut body = Vec::new();
         while !matches!(self.current(), Some(Token::Enough)) {
-            body.push(self.parse_expression());
+            body.push(self.parse_expression()?);
         }
         self.advance();
 
-        Expression::FnDef {
+        Some(Expression::FnDef {
             name,
             params,
             body
-        }
+        })
     }
 
-    fn read_binary_op(&mut self) -> Expression {
+    fn read_binary_op(&mut self) -> Option<Expression> {
         let op_keyword = self.current();
         self.advance();
 
-        let value = self.parse_expression();
+        let value = self.parse_expression()?;
         if !matches!(self.current(), Some(Token::Into | Token::Off | Token::With | Token::From)) {
             eprintln!("Incorrect keyword `{:?}` inside of binary operation `{:?}`", self.current(), op_keyword);
-            return Expression::Error;
+            return Some(Expression::Error);
         }
 
         self.advance();
@@ -317,33 +311,33 @@ impl Parser {
         if let Some(Token::Identifier(s)) = self.current() {
             self.advance();
 
-            Expression::BinaryOp {
+            Some(Expression::BinaryOp {
                 operation: BinaryOperation::from_token(op_keyword.unwrap()),
                 variable: s,
                 value: Box::new(value),
-            }
+            })
         } else {
             eprintln!("Missing second identifier inside of binary operation `{:?}`", op_keyword);
-            Expression::Error
+            Some(Expression::Error)
         }
     }
 
-    fn read_print(&mut self) -> Expression {
+    fn read_print(&mut self) -> Option<Expression> {
         self.advance();
-        let value = Box::new(self.parse_expression());
-        Expression::Print(value)
+        let value = self.parse_expression()?;
+        Some(Print(Box::new(value)))
     }
 
-    fn read_var_def(&mut self) -> Expression {
+    fn read_var_def(&mut self) -> Option<Expression> {
         self.advance();
 
         let value;
         if !matches!(self.current(), Some(Token::Rock)) {
-            value = Box::new(self.parse_expression());
+            value = Box::new(self.parse_expression()?);
 
             if !matches!(self.current(), Some(Token::Rock)) {
                 eprintln!("Missing `Rock(s)` inside variable definition");
-                return Expression::Error;
+                return Some(Expression::Error);
             }
 
             self.advance();
@@ -352,17 +346,17 @@ impl Parser {
 
             if !matches!(self.current(), Some(Token::Named)) {
                 eprintln!("Missing `Named` inside string variable definition");
-                return Expression::Error;
+                return Some(Expression::Error);
             }
 
             self.advance();
 
-            value = Box::new(self.parse_expression());
+            value = Box::new(self.parse_expression()?);
         }
 
         if !matches!(self.current(), Some(Token::At)) {
             eprintln!("Missing `at` inside variable definition");
-            return Expression::Error;
+            return Some(Expression::Error);
         }
 
         self.advance();
@@ -372,16 +366,16 @@ impl Parser {
             Some(Token::Identifier(s)) => name = s,
             _ => {
                 eprintln!("Missing identifier inside of variable definition");
-                return Expression::Error
+                return Some(Expression::Error)
             },
         }
 
         self.advance();
 
-        Expression::VarDef {
+        Some(Expression::VarDef {
             name,
             value,
-        }
+        })
     }
 
     fn current(&self) -> Option<Token> {
@@ -390,6 +384,11 @@ impl Parser {
 
     fn advance(&mut self) {
         self.pos += 1;
+    }
+
+    fn expr(&mut self, e: Expression) -> Option<Expression> {
+        self.advance();
+        Some(e)
     }
 }
 
