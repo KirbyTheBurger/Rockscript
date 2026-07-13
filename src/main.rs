@@ -10,6 +10,7 @@ mod parser;
 mod interpreter;
 
 #[derive(CliParser)]
+#[command(about, version, long_about = None)]
 struct Args {
     #[command(subcommand)]
     command: Commands,
