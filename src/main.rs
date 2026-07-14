@@ -1,13 +1,13 @@
 use std::fs;
 
 use clap::Parser as CliParser;
-use logos::Logos;
-use crate::{interpreter::Interpreter, lexer::Token, parser::Parser};
+use crate::{error::report_error, interpreter::Interpreter, lexer::tokenize, parser::Parser};
 use Commands::*;
 
 mod lexer;
 mod parser;
 mod interpreter;
+mod error;
 
 #[derive(CliParser)]
 #[command(about, version, long_about = None)]
@@ -31,11 +31,18 @@ fn main() {
 
     match args.command {
         Run {file, debug} => {
-            let source = fs::read_to_string(file);
+            let source = fs::read_to_string(&file);
             match source {
-                Ok(c) => {
-                    let lexer = Token::lexer(&c);
-                    let tokens: Vec<Token> = lexer.filter_map(Result::ok).collect();
+                Ok(s) => {
+                    let tokens = match tokenize(&s) {
+                        Ok(t) => t.iter().map(|t| t.token.clone()).collect(),
+                        Err(errs) => {
+                            for e in errs {
+                                report_error(&s, &file, Box::new(e));
+                            }
+                            return;
+                        }
+                    };
                     if debug { println!("Tokens: {:?}", tokens); }
 
                     let mut parser = Parser::new(tokens);

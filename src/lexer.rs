@@ -1,4 +1,8 @@
+use std::ops;
+
 use logos::Logos;
+
+use crate::error::LexError;
 
 #[derive(Logos, Debug, Clone)]
 #[logos(skip r"[ \t\n\f]+")]
@@ -41,4 +45,27 @@ pub enum Token {
     #[token("roll")] Roll,
     #[token("while")] While,
     #[token("destroy")] Destroy,
+}
+
+pub struct SpannedToken {
+    pub token: Token,
+    pub span: ops::Range<usize>,
+}
+
+pub fn tokenize(source: &str) -> Result<Vec<SpannedToken>, Vec<LexError>> {
+    let mut tokens = Vec::new();
+    let mut errors = Vec::new();
+
+    for (result, span) in Token::lexer(source).spanned() {
+        match result {
+            Ok(token) => tokens.push(SpannedToken { token, span }),
+            Err(_) => errors.push(span.into()),
+        }
+    }
+
+    if errors.is_empty() {
+        Ok(tokens)
+    } else {
+        Err(errors)
+    }
 }
