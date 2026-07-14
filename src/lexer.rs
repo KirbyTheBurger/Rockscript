@@ -4,7 +4,7 @@ use logos::Logos;
 
 use crate::error::LexError;
 
-#[derive(Logos, Debug, Clone)]
+#[derive(Logos, Debug, Clone, PartialEq)]
 #[logos(skip r"[ \t\n\f]+")]
 pub enum Token {
     #[regex(r#""[^"]*""#, |lex| lex.slice()[1..lex.slice().len()-1].to_string())]
@@ -47,6 +47,7 @@ pub enum Token {
     #[token("destroy")] Destroy,
 }
 
+#[derive(Debug)]
 pub struct SpannedToken {
     pub token: Token,
     pub span: ops::Range<usize>,

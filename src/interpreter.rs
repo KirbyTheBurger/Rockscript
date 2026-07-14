@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::{AddAssign, DivAssign, MulAssign, SubAssign}};
 
-use crate::parser::{BinaryOperation, CmpOperation, Expression};
+use crate::parser::{BinaryOp, Expression};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -210,16 +210,16 @@ impl Interpreter {
         } = expression {
             let evaluated = self.eval_value(&value);
             match operation {
-                BinaryOperation::Add => {
+                BinaryOp::Add => {
                     *self.get_variable_mut(variable).unwrap() += evaluated;
                 },
-                BinaryOperation::Sub => {
+                BinaryOp::Sub => {
                     *self.get_variable_mut(variable).unwrap() -= evaluated;
                 },
-                BinaryOperation::Mul => {
+                BinaryOp::Mul => {
                     *self.get_variable_mut(variable).unwrap() *= evaluated;
                 },
-                BinaryOperation::Div => {
+                BinaryOp::Div => {
                     *self.get_variable_mut(variable).unwrap() /= evaluated
                 }
             }
@@ -246,15 +246,11 @@ impl Interpreter {
                     None => panic!("expected function to return value"),
                 }
             },
-            Expression::Comparison {operation, left, right} => {
-                match operation {
-                    CmpOperation::Weigh => {
-                        let left_value = self.eval_value(left);
-                        let right_value = self.eval_value(right);
+            Expression::Weigh {left, right} => {
+                let left_value = self.eval_value(left);
+                let right_value = self.eval_value(right);
 
-                        return Value::Boolean(left_value >= right_value);
-                    }
-                }
+                return Value::Boolean(left_value >= right_value);
             },
             _ => panic!("unknown value or not yet implemented"),
         }

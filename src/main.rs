@@ -35,7 +35,7 @@ fn main() {
             match source {
                 Ok(s) => {
                     let tokens = match tokenize(&s) {
-                        Ok(t) => t.iter().map(|t| t.token.clone()).collect(),
+                        Ok(t) => t,
                         Err(errs) => {
                             for e in errs {
                                 report_error(&s, &file, Box::new(e));
@@ -46,7 +46,15 @@ fn main() {
                     if debug { println!("Tokens: {:?}", tokens); }
 
                     let mut parser = Parser::new(tokens);
-                    let expressions = parser.parse();
+                    let expressions = match parser.parse() {
+                        Ok(e) => e,
+                        Err(errs) => {
+                            for e in errs {
+                                report_error(&s, &file, Box::new(e));
+                            }
+                            return;
+                        }
+                    };
                     if debug { println!("Expressions: {:?}", expressions); }
 
                     let mut interpreter = Interpreter::new(expressions);
