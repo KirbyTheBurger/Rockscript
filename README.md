@@ -195,9 +195,6 @@ present follow add with 5 and 6
 ```
 *output:* `11`  
   
-### Comparisons  
-A comparison evaluates to either big or small. These are all comparisons:  
-  
 ## Weighing  
 By weighing a value against another, you can see which is heavier:  
 ```rockscript
