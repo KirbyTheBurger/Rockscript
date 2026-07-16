@@ -2,6 +2,8 @@
 name = "rockscript"
 version = "0.2.0"
 edition = "2024"
+description = "Esolang called Rockscript"
+license = "MIT"
 
 [dependencies]
 ariadne = "0.6.0"
