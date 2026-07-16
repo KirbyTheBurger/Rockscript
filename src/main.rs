@@ -34,7 +34,7 @@ fn main() {
             let source = fs::read_to_string(&file);
             match source {
                 Ok(s) => {
-                    let tokens = match tokenize(&s) {
+                    let tokens = match tokenize(&s, debug) {
                         Ok(t) => t,
                         Err(errs) => {
                             for e in errs {
@@ -43,9 +43,8 @@ fn main() {
                             return;
                         }
                     };
-                    if debug { println!("Tokens: {:?}", tokens); }
 
-                    let mut parser = Parser::new(tokens);
+                    let mut parser = Parser::new(tokens, debug);
                     let expressions = match parser.parse() {
                         Ok(e) => e,
                         Err(errs) => {
@@ -55,13 +54,11 @@ fn main() {
                             return;
                         }
                     };
-                    if debug { println!("Expressions: {:?}", expressions); }
 
                     let mut interpreter = Interpreter::new(expressions);
-                    interpreter.run();
-                    if debug {
-                        println!("Variables: {:?}", interpreter.variables);
-                        println!("Functions: {:?}", interpreter.functions);
+                    if let Err(e) = interpreter.run() {
+                        report_error(&s, &file, Box::new(e));
+                        return;
                     }
                 },
 

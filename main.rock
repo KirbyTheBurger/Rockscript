@@ -1,1 +1,87 @@
-throw 5 rocks throw x
+present "arithmetic:"
+
+throw 4 rocks at add
+throw 4 rocks at sub
+throw 4 rocks at mul
+throw 4 rocks at div
+
+smash 2 into add
+chip 2 off sub
+mate 2 with mul
+split 2 from div
+
+present add
+present sub
+present mul
+present div
+
+present "strings:"
+
+throw rock named "Hello" at hello_add
+throw rock named "Hello" at hello_mul
+
+smash " world" into hello_add
+mate 3 with hello_mul
+
+present hello_add
+present hello_mul
+
+present "functions:"
+
+carve instruction into hello
+    present "hello"
+enough
+
+follow hello
+
+carve instruction into greet
+    retrieve input
+    throw rock named "hello " at s
+    smash input into s
+    present s
+enough
+
+follow greet with "KirbyTheBurger"
+
+carve instruction into return
+    engrave "returned"
+enough
+
+present follow return
+
+carve instruction into two
+    retrieve one
+    retrieve two
+    present 1
+    present 2
+enough
+
+follow two with 1 and 2
+
+present "comparisons/if:"
+
+carve instruction into cmp
+    retrieve a
+    retrieve b
+    inspect weigh a against b
+        present "a >= b"
+    refine
+        present "a < b"
+    enough
+enough
+
+follow cmp with 4 and 5
+follow cmp with 5 and 4
+
+inspect small
+refine inspect big
+    present "correct"
+enough
+
+present "while:"
+
+throw 0 rocks at x
+roll while weigh 2 against x
+    smash 1 into x
+    present x
+enough

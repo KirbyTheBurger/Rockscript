@@ -53,7 +53,7 @@ pub struct SpannedToken {
     pub span: ops::Range<usize>,
 }
 
-pub fn tokenize(source: &str) -> Result<Vec<SpannedToken>, Vec<LexError>> {
+pub fn tokenize(source: &str, debug: bool) -> Result<Vec<SpannedToken>, Vec<LexError>> {
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
 
@@ -65,6 +65,12 @@ pub fn tokenize(source: &str) -> Result<Vec<SpannedToken>, Vec<LexError>> {
     }
 
     if errors.is_empty() {
+        if debug {
+            for t in &tokens {
+                println!("produced token: {:?}", t.token);
+            }
+        }
+
         Ok(tokens)
     } else {
         Err(errors)

@@ -13,7 +13,12 @@ impl From<std::ops::Range<usize>> for LexError {
 
 pub struct ParseError {
     pub desc: String,
-    pub span: std::ops::Range<usize>,
+    pub span: ops::Range<usize>,
+}
+
+pub struct RuntimeError {
+    pub desc: String,
+    pub span: ops::Range<usize>,
 }
 
 pub trait Diagnostic {
@@ -27,6 +32,11 @@ impl Diagnostic for LexError {
 }
 
 impl Diagnostic for ParseError {
+    fn span(&self) -> std::ops::Range<usize> { self.span.clone() }
+    fn desc(&self) -> String { self.desc.clone() }
+}
+
+impl Diagnostic for RuntimeError {
     fn span(&self) -> std::ops::Range<usize> { self.span.clone() }
     fn desc(&self) -> String { self.desc.clone() }
 }

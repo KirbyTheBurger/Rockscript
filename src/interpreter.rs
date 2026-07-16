@@ -1,25 +1,26 @@
-use std::{collections::HashMap, ops::{AddAssign, DivAssign, MulAssign, SubAssign}};
+use std::{collections::HashMap, ops, rc::Rc};
 
-use crate::parser::{BinaryOp, Expression};
+use crate::{error::RuntimeError, parser::expression::{BinaryOp, Expression::{self, *}, SpannedExpr, SpannedStatement, Statement::{self, *}}};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Number(f64),
     String(String),
     Boolean(bool),
+    None,
 }
 
 pub struct Interpreter {
     pub variables: Vec<HashMap<String, Value>>,
     pub functions: Vec<HashMap<String, Function>>,
-    expressions: Vec<Expression>,
+    program: Vec<Rc<SpannedStatement>>,
     pos: usize,
 }
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    params: Vec<String>,
-    body: Vec<Expression>,
+    params: Rc<[String]>,
+    body: Rc<[SpannedStatement]>,
 }
 
 enum ControlFlow {
@@ -29,11 +30,11 @@ enum ControlFlow {
 }
 
 impl Interpreter {
-    pub fn new(expressions: Vec<Expression>) -> Interpreter {
+    pub fn new(program: Vec<SpannedStatement>) -> Interpreter {
         let mut interpreter = Interpreter {
             variables: Vec::new(),
             functions: Vec::new(),
-            expressions,
+            program: program.into_iter().map(Rc::new).collect(),
             pos: 0,
         };
 
@@ -42,72 +43,94 @@ impl Interpreter {
         interpreter
     }
 
-    pub fn run(&mut self) {
-        loop {
-            let current = self.current();
+    pub fn run(&mut self) -> Result<(), RuntimeError> {
+        while let Some(s) = self.current() {
+            self.eval_statement(&s)?;
+            self.advance();
+        }
 
-            if matches!(current, None) {
-                break;
-            }
+        Ok(())
+    }
 
-            self.eval_expression(current.unwrap());
+    fn eval_statement(&mut self, statement: &SpannedStatement) -> Result<ControlFlow, RuntimeError> {
+        match &statement.statement {
+            VarDef { name, value } => {
+                let evaluated = self.eval_expression(&value)?;
+                self.insert_variable(name, evaluated);
+            },
+            Print(value) => {
+                println!("{}", self.eval_expression(&value)?.to_string())
+            },
+            Statement::BinaryOp { operation, variable, value } => {
+                self.eval_binary_op(operation, variable, &value)?;
+            },
+            FnDef {name, params, body} => {
+                self.define_function(name, &params, &body);
+            },
+            Return(e) => {
+                return Ok(ControlFlow::Return(self.eval_expression(e)?));
+            },
+            If { condition, body, else_ } => {
+                self.eval_if(condition, body, else_)?;
+            },
+            While { condition, body } => {
+                self.eval_while(condition, body)?;
+            },
+            Break => return Ok(ControlFlow::Break),
+            Expr(e) => { self.eval_expression(e)?; }
+        }
+
+        Ok(ControlFlow::None)
+    }
+
+    fn eval_expression(&mut self, expr: &SpannedExpr) -> Result<Value, RuntimeError> {
+        match &expr.expr {
+            FnCall {name, args} => {
+                self.eval_fncall(name, args, &expr.span)
+            },
+            Expression::Number(n) => Ok(Value::Number(*n)),
+            Expression::Str(s) => Ok(Value::String(s.clone())),
+            Expression::Boolean(b) => Ok(Value::Boolean(*b)),
+            Expression::Identifier(s) => {
+                let value = self.get_variable(s.clone());
+                match value {
+                    Some(v) => Ok(v.clone()),
+                    None => panic!("unknown variable"),
+                }
+            },
+            Expression::Weigh {left, right} => {
+                let left_value = self.eval_expression(left)?;
+                let right_value = self.eval_expression(right)?;
+
+                return Ok(Value::Boolean(left_value >= right_value));
+            },
         }
     }
 
-    fn eval_expression(&mut self, expression: Expression) -> ControlFlow {
-        match expression {
-            Expression::VarDef { name, value } => {
-                self.define_var(name, *value);
-            },
-            Expression::Print(v) => {
-                println!("{}", self.eval_value(&v).to_string())
-            },
-            Expression::BinaryOp{..} => {
-                self.eval_binary_op(expression);
-            },
-            Expression::FnDef {name, params, body} => {
-                self.define_function(name, params, body);
-            },
-            Expression::FnCall {name, args} => {
-                self.eval_function(name, args);
-            },
-            Expression::Return(e) => {
-                return ControlFlow::Return(self.eval_value(&e));
-            },
-            Expression::If { condition, body, else_ } => {
-                self.eval_if(condition, body, else_);
-            },
-            Expression::While { condition, body } => {
-                self.eval_while(condition, body);
-            },
-            Expression::Break => return ControlFlow::Break,
-            _ => println!("unknown expression"),
-        }
-        
-        self.advance();
-        ControlFlow::None
-    }
-
-    fn eval_while(&mut self, condition: Box<Expression>, body: Vec<Expression>) {
-        'outer: while matches!(self.eval_value(&condition), Value::Boolean(true)) {
+    fn eval_while(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>) -> Result<(), RuntimeError> {
+        'outer: while matches!(self.eval_expression(condition)?, Value::Boolean(true)) {
             self.push_scope();
 
-            for e in &body {
-                if let ControlFlow::Break = self.eval_expression(e.clone()) {
+            for e in body {
+                if matches!(self.eval_statement(e)?, ControlFlow::Break) {
                     break 'outer;
                 }
             }
 
             self.pop_scope();
         }
+
+        Ok(())
     }
 
-    fn eval_if(&mut self, condition: Box<Expression>, body: Vec<Expression>, else_: Option<Vec<Expression>>) {
-        if let Value::Boolean(true) = self.eval_value(&condition) {
+    fn eval_if(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>, else_: &Option<Vec<SpannedStatement>>) -> Result<(), RuntimeError> {
+        let cond_val = self.eval_expression(condition)?;
+
+        if matches!(cond_val, Value::Boolean(true)) {
             self.push_scope();
 
-            for e in body {
-                self.eval_expression(e);
+            for stat in body {
+                self.eval_statement(stat)?;
             }
 
             self.pop_scope();
@@ -115,36 +138,40 @@ impl Interpreter {
             if let Some(v) = else_ {
                 self.push_scope();
 
-                for e in v {
-                    self.eval_expression(e);
+                for stat in v {
+                    self.eval_statement(stat)?;
                 }
 
                 self.pop_scope();
             }
         }
+
+        Ok(())
     }
 
-    fn eval_function(&mut self, name: String, args: Vec<Expression>) -> Option<Value> {
-        let function = self.get_function(name).cloned();
-        if let Some(f) = function {
+    // TODO: make returning also possible inside smaller scopes
+    fn eval_fncall(&mut self, name: &String, args: &Vec<SpannedExpr>, span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
+        let function = self.get_function(name.to_string()).cloned();
+        if let Some(func) = function {
             self.push_scope();
 
-            for (param, value) in f.params.iter().zip(args.iter()) {
-                self.define_var(param.clone(), value.clone());
+            for (param, value) in func.params.iter().zip(args.iter()) {
+                let evaluated = self.eval_expression(value)?;
+                self.insert_variable(param, evaluated);
             }
 
-            let mut return_value = None;
-            for e in &f.body {
-                if let ControlFlow::Return(v) = self.eval_expression(e.clone()) {
-                    return_value = Some(v);
+            let mut return_value = Value::None;
+            for stat in func.body.iter() {
+                if let ControlFlow::Return(v) = self.eval_statement(stat)? {
+                    return_value = v;
                     break;
                 }
             }
 
             self.pop_scope();
-            return return_value;
+            Ok(return_value)
         } else {
-            panic!("unknown function called")
+            throw("", span)
         }
     }
 
@@ -158,10 +185,10 @@ impl Interpreter {
         self.functions.pop();
     }
 
-    fn define_function(&mut self, name: String, params: Vec<String>, body: Vec<Expression>) {
+    fn define_function(&mut self, name: &String, params: &Vec<String>, body: &Vec<SpannedStatement>) {
         let function = Function {
-            params,
-            body,
+            params: Rc::from(params.as_slice()),
+            body: Rc::from(body.as_slice()),
         };
         self.insert_function(name, function);
     }
@@ -176,9 +203,9 @@ impl Interpreter {
         None
     }
 
-    fn get_variable_mut(&mut self, name: String) -> Option<&mut Value> {
+    fn get_variable_mut(&mut self, name: &String) -> Option<&mut Value> {
         for hm in self.variables.iter_mut().rev() {
-            if let Some(v) = hm.get_mut(&name) {
+            if let Some(v) = hm.get_mut(name) {
                 return Some(v);
             }
         }
@@ -196,78 +223,90 @@ impl Interpreter {
         None
     }
 
-    fn insert_variable(&mut self, name: String, value: Value) {
-        self.variables.last_mut().unwrap().insert(name, value);
+    fn insert_variable(&mut self, name: &String, value: Value) {
+        match self.variables.last_mut() {
+            Some(h) => h,
+            None => unreachable!(),
+        }.insert(name.to_string(), value);
     }
 
-    fn insert_function(&mut self, name: String, function: Function) {
-        self.functions.last_mut().unwrap().insert(name, function);
+    fn insert_function(&mut self, name: &String, function: Function) {
+        self.functions.last_mut().unwrap().insert(name.to_string(), function);
     }
 
-    fn eval_binary_op(&mut self, expression: Expression) {
-        if let Expression::BinaryOp {
-            operation, variable, value
-        } = expression {
-            let evaluated = self.eval_value(&value);
-            match operation {
-                BinaryOp::Add => {
-                    *self.get_variable_mut(variable).unwrap() += evaluated;
-                },
-                BinaryOp::Sub => {
-                    *self.get_variable_mut(variable).unwrap() -= evaluated;
-                },
-                BinaryOp::Mul => {
-                    *self.get_variable_mut(variable).unwrap() *= evaluated;
-                },
-                BinaryOp::Div => {
-                    *self.get_variable_mut(variable).unwrap() /= evaluated
+    // TODO: implement proper error handling (not feeling like it rn)
+    fn eval_binary_op(&mut self, operation: &BinaryOp, variable: &String, value: &SpannedExpr) -> Result<(), RuntimeError> {
+        let evaluated = self.eval_expression(value)?;
+        let var = self.get_variable_mut(variable).unwrap();
+        match operation {
+            BinaryOp::Add => {
+                match var {
+                    Value::Number(n1) => match evaluated {
+                        Value::Number(n2) => *n1 += n2,
+                        Value::String(s) => *n1 += s.parse::<f64>().expect("failed to add string to number"),
+                        _ => panic!("incompatible types"),
+                    },
+                    Value::String(s1) => match evaluated {
+                        Value::Number(n) => s1.push_str(n.to_string().as_str()),
+                        Value::String(s2) => s1.push_str(s2.as_str()),
+                        _ => panic!("incompatible types"),
+                    },
+                    _ => panic!("incompatible types"),
+                }
+            },
+            BinaryOp::Sub => {
+                match var {
+                    Value::Number(n1) => match evaluated {
+                        Value::Number(n2) => *n1 -= n2,
+                        Value::String(s) => *n1 -= s.parse::<f64>().expect("failed to add string to number"),
+                        _ => panic!("incompatible types"),
+                    },
+                    _ => panic!("incompatible types"),
+                }
+            },
+            BinaryOp::Mul => {
+                match var {
+                    Value::Number(n1) => match evaluated {
+                        Value::Number(n2) => *n1 *= n2,
+                        Value::String(s) => *n1 *= s.parse::<f64>().expect("failed to add string to number"),
+                        _ => panic!("incompatible types"),
+                    },
+                    Value::String(s) => match evaluated {
+                        Value::Number(n) => *s = s.repeat(n as usize),
+                        _ => panic!("incompatible types"),
+                    },
+                    _ => panic!("incompatible types"),
+                }
+            },
+            BinaryOp::Div => {
+                match var {
+                    Value::Number(n1) => match evaluated {
+                        Value::Number(n2) => *n1 /= n2,
+                        Value::String(s) => *n1 /= s.parse::<f64>().expect("failed to add string to number"),
+                        _ => panic!("incompatible types"),
+                    },
+                    _ => panic!("incompatible types"),
                 }
             }
-        } else {
-            panic!("can only evaluate binary operation")
         }
+
+        Ok(())
     }
 
-    fn eval_value(&mut self, expression: &Expression) -> Value {
-        match expression {
-            Expression::Number(n) => Value::Number(*n),
-            Expression::Str(s) => Value::String(s.clone()),
-            Expression::Boolean(b) => Value::Boolean(*b),
-            Expression::Identifier(s) => {
-                let value = self.get_variable(s.clone());
-                match value {
-                    Some(v) => v.clone(),
-                    None => panic!("unknown variable"),
-                }
-            },
-            Expression::FnCall {name, args} => {
-                match self.eval_function(name.clone(), args.clone()) {
-                    Some(v) => v,
-                    None => panic!("expected function to return value"),
-                }
-            },
-            Expression::Weigh {left, right} => {
-                let left_value = self.eval_value(left);
-                let right_value = self.eval_value(right);
-
-                return Value::Boolean(left_value >= right_value);
-            },
-            _ => panic!("unknown value or not yet implemented"),
-        }
-    }
-
-    fn define_var(&mut self, name: String, value: Expression) {
-        let evaluated = self.eval_value(&value);
-        self.insert_variable(name, evaluated);
-    }
-
-    fn current(&self) -> Option<Expression> {
-        self.expressions.get(self.pos).cloned()
+    fn current(&self) -> Option<Rc<SpannedStatement>> {
+        self.program.get(self.pos).cloned()
     }
 
     fn advance(&mut self) {
         self.pos += 1;
     }
+}
+
+fn throw<T>(msg: &str, span: &ops::Range<usize>) -> Result<T, RuntimeError> {
+    Err(RuntimeError {
+        desc: msg.to_string(),
+        span: span.clone(),
+    })
 }
 
 impl ToString for Value {
@@ -279,67 +318,7 @@ impl ToString for Value {
                 true => String::from("big"),
                 false => String::from("small"),
             },
-        }
-    }
-}
-
-impl AddAssign for Value {
-    fn add_assign(&mut self, rhs: Self) {
-        match self {
-            Value::Number(n1) => match rhs {
-                Value::Number(n2) => *n1 += n2,
-                Value::String(s) => *n1 += s.parse::<f64>().expect("failed to add string to number"),
-                _ => panic!("incompatible types"),
-            },
-            Value::String(s1) => match rhs {
-                Value::Number(n) => s1.push_str(n.to_string().as_str()),
-                Value::String(s2) => s1.push_str(s2.as_str()),
-                _ => panic!("incompatible types"),
-            },
-            _ => panic!("incompatible types"),
-        }
-    }
-}
-
-impl SubAssign for Value {
-    fn sub_assign(&mut self, rhs: Self) {
-        match self {
-            Value::Number(n1) => match rhs {
-                Value::Number(n2) => *n1 -= n2,
-                Value::String(s) => *n1 -= s.parse::<f64>().expect("failed to add string to number"),
-                _ => panic!("incompatible types"),
-            },
-            _ => panic!("incompatible types"),
-        }
-    }
-}
-
-impl MulAssign for Value {
-    fn mul_assign(&mut self, rhs: Self) {
-        match self {
-            Value::Number(n1) => match rhs {
-                Value::Number(n2) => *n1 *= n2,
-                Value::String(s) => *n1 *= s.parse::<f64>().expect("failed to add string to number"),
-                _ => panic!("incompatible types"),
-            },
-            Value::String(s) => match rhs {
-                Value::Number(n) => *s = s.repeat(n as usize),
-                _ => panic!("incompatible types"),
-            },
-            _ => panic!("incompatible types"),
-        }
-    }
-}
-
-impl DivAssign for Value {
-    fn div_assign(&mut self, rhs: Self) {
-        match self {
-            Value::Number(n1) => match rhs {
-                Value::Number(n2) => *n1 /= n2,
-                Value::String(s) => *n1 /= s.parse::<f64>().expect("failed to add string to number"),
-                _ => panic!("incompatible types"),
-            },
-            _ => panic!("incompatible types"),
+            Value::None => "nil".to_string()
         }
     }
 }
