@@ -71,10 +71,10 @@ impl Interpreter {
                 return Ok(ControlFlow::Return(self.eval_expression(e)?));
             },
             If { condition, body, else_ } => {
-                self.eval_if(condition, body, else_)?;
+                return self.eval_if(condition, body, else_);
             },
             While { condition, body } => {
-                self.eval_while(condition, body)?;
+                return self.eval_while(condition, body);
             },
             Break => return Ok(ControlFlow::Break),
             Expr(e) => { self.eval_expression(e)?; }
@@ -107,49 +107,75 @@ impl Interpreter {
         }
     }
 
-    fn eval_while(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>) -> Result<(), RuntimeError> {
-        'outer: while matches!(self.eval_expression(condition)?, Value::Boolean(true)) {
+    fn eval_while(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>) -> Result<ControlFlow, RuntimeError> {
+        while matches!(self.eval_expression(condition)?, Value::Boolean(true)) {
             self.push_scope();
 
+            let mut result = ControlFlow::None;
             for e in body {
-                if matches!(self.eval_statement(e)?, ControlFlow::Break) {
-                    break 'outer;
+                let cf = self.eval_statement(e)?;
+                if !matches!(cf, ControlFlow::None) {
+                    result = cf;
+                    break;
                 }
             }
 
             self.pop_scope();
+
+            match result {
+                ControlFlow::Break => break,
+                ControlFlow::None => {},
+                other => return Ok(other)
+            }
         }
 
-        Ok(())
+        Ok(ControlFlow::None)
     }
 
-    fn eval_if(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>, else_: &Option<Vec<SpannedStatement>>) -> Result<(), RuntimeError> {
+    fn eval_if(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>, else_: &Option<Vec<SpannedStatement>>) -> Result<ControlFlow, RuntimeError> {
         let cond_val = self.eval_expression(condition)?;
 
         if matches!(cond_val, Value::Boolean(true)) {
             self.push_scope();
 
+            let mut result = ControlFlow::None;
             for stat in body {
-                self.eval_statement(stat)?;
+                let cf = self.eval_statement(stat)?;
+                if !matches!(cf, ControlFlow::None) {
+                    result = cf;
+                    break;
+                }
             }
 
             self.pop_scope();
+
+            if !matches!(result, ControlFlow::None) {
+                return Ok(result);
+            }
         } else {
             if let Some(v) = else_ {
                 self.push_scope();
 
+                let mut result = ControlFlow::None;
                 for stat in v {
-                    self.eval_statement(stat)?;
+                    let cf = self.eval_statement(stat)?;
+                    if !matches!(cf, ControlFlow::None) {
+                        result = cf;
+                        break;
+                    }
                 }
 
                 self.pop_scope();
+
+                if !matches!(result, ControlFlow::None) {
+                    return Ok(result);
+                }
             }
         }
 
-        Ok(())
+        Ok(ControlFlow::None)
     }
 
-    // TODO: make returning also possible inside smaller scopes
     fn eval_fncall(&mut self, name: &String, args: &Vec<SpannedExpr>, span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
         let function = self.get_function(name.to_string()).cloned();
         if let Some(func) = function {
@@ -160,18 +186,26 @@ impl Interpreter {
                 self.insert_variable(param, evaluated);
             }
 
-            let mut return_value = Value::None;
+            let mut result = ControlFlow::None;
             for stat in func.body.iter() {
-                if let ControlFlow::Return(v) = self.eval_statement(stat)? {
-                    return_value = v;
+                let cf = self.eval_statement(stat)?;
+                if !matches!(cf, ControlFlow::None) {
+                    result = cf;
                     break;
                 }
             }
 
             self.pop_scope();
-            Ok(return_value)
+
+            match result {
+                ControlFlow::Return(v) => return Ok(v),
+                ControlFlow::None => {},
+                _ => throw("attempted to break form function", span)?,
+            }
+
+            return Ok(Value::None)
         } else {
-            throw("", span)
+            throw("unknown function", span)
         }
     }
 
