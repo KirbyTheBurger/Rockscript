@@ -67,7 +67,7 @@ present x
 *output:* `Hello world!`  
   
 ## Arithmetic 
-The only way of performing Arithmetic is by mutating a variable. These are all possible operations:  
+There are 2 ways of performing arithmetic on numbers. The first is mutating a variable:  
   
 ### Addition  
 ```rockscript
@@ -125,7 +125,17 @@ throw 3 rocks at y
 split y from x
 present x
 ```  
-*output:* `4`
+*output:* `4`  
+
+### Normal arithmetic operation
+You're able to just normally do arithmetic, which is very similar to the syntax of mutating a variable, just gramatically correct for this case:
+```rockscript
+present 5 smashed into 2
+present 1 chipped off 3
+present 2 mated with 2
+present 2 split from 4
+```
+*output:* `7 2 2 2`
   
 ## Functions  
 Functions are defined using `carve instruction into`:
