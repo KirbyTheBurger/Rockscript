@@ -16,21 +16,28 @@ pub enum Token {
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
     Identifier(String),
 
+    #[token("big")] True,
+    #[token("small")] False,
+
     #[token("throw")] Throw,
     #[token("rock")] #[token("rocks")] Rock,
     #[token("at")] At,
     #[token("named")] Named,
+
     #[token("present")] Present,
-    #[token("smash")] Smash,
+
+    #[token("smash")] #[token("smashed")] Smash,
     #[token("into")] Into,
-    #[token("chip")] Chip,
+    #[token("chip")] #[token("chipped")] Chip,
     #[token("off")] Off,
-    #[token("mate")] Mate,
+    #[token("mate")] #[token("mated")] Mate,
     #[token("with")] With,
     #[token("split")] Split,
     #[token("from")] From,
-    #[token("big")] True,
-    #[token("small")] False,
+
+    #[token("(")] LParen,
+    #[token(")")] RParen,
+
     #[token("carve")] Carve,
     #[token("instruction")] Instruction,
     #[token("retrieve")] Retrieve,
@@ -38,10 +45,13 @@ pub enum Token {
     #[token("follow")] Follow,
     #[token("and")] And,
     #[token("engrave")] Engrave,
+
     #[token("weigh")] Weigh,
     #[token("against")] Against,
+
     #[token("inspect")] Inspect,
     #[token("refine")] Refine,
+
     #[token("roll")] Roll,
     #[token("while")] While,
     #[token("destroy")] Destroy,

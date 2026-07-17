@@ -61,8 +61,8 @@ impl Interpreter {
             Print(value) => {
                 println!("{}", self.eval_expression(&value)?.to_string())
             },
-            Statement::BinaryOp { operation, variable, value } => {
-                self.eval_binary_op(operation, variable, &value)?;
+            Statement::Assign { operation, variable, value } => {
+                self.eval_assign(operation, variable, &value, &statement.span)?;
             },
             FnDef {name, params, body} => {
                 self.define_function(name, &params, &body);
@@ -88,23 +88,33 @@ impl Interpreter {
             FnCall {name, args} => {
                 self.eval_fncall(name, args, &expr.span)
             },
-            Expression::Number(n) => Ok(Value::Number(*n)),
-            Expression::Str(s) => Ok(Value::String(s.clone())),
-            Expression::Boolean(b) => Ok(Value::Boolean(*b)),
-            Expression::Identifier(s) => {
+            Number(n) => Ok(Value::Number(*n)),
+            Str(s) => Ok(Value::String(s.clone())),
+            Boolean(b) => Ok(Value::Boolean(*b)),
+            Identifier(s) => {
                 let value = self.get_variable(s.clone());
                 match value {
                     Some(v) => Ok(v.clone()),
                     None => panic!("unknown variable"),
                 }
             },
-            Expression::Weigh {left, right} => {
+            Group(e) => self.eval_expression(e),
+            Weigh {left, right} => {
                 let left_value = self.eval_expression(left)?;
                 let right_value = self.eval_expression(right)?;
 
                 return Ok(Value::Boolean(left_value >= right_value));
             },
+            Expression::BinaryOp { operation, lhs, rhs } => {
+                self.eval_binaryop(operation, lhs, rhs, &expr.span)
+            }
         }
+    }
+
+    fn eval_binaryop(&mut self, operation: &BinaryOp, v1: &SpannedExpr, v2: &SpannedExpr, span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
+        let lhs = self.eval_expression(v1)?;
+        let rhs = self.eval_expression(v2)?;
+        calculate(operation, lhs, rhs, span)
     }
 
     fn eval_while(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>) -> Result<ControlFlow, RuntimeError> {
@@ -268,62 +278,12 @@ impl Interpreter {
         self.functions.last_mut().unwrap().insert(name.to_string(), function);
     }
 
-    // TODO: implement proper error handling (not feeling like it rn)
-    fn eval_binary_op(&mut self, operation: &BinaryOp, variable: &String, value: &SpannedExpr) -> Result<(), RuntimeError> {
+    fn eval_assign(&mut self, operation: &BinaryOp, variable: &String, value: &SpannedExpr, span: &ops::Range<usize>) -> Result<(), RuntimeError> {
         let evaluated = self.eval_expression(value)?;
+        let var_val = self.get_variable(variable.clone()).unwrap().clone();
         let var = self.get_variable_mut(variable).unwrap();
-        match operation {
-            BinaryOp::Add => {
-                match var {
-                    Value::Number(n1) => match evaluated {
-                        Value::Number(n2) => *n1 += n2,
-                        Value::String(s) => *n1 += s.parse::<f64>().expect("failed to add string to number"),
-                        _ => panic!("incompatible types"),
-                    },
-                    Value::String(s1) => match evaluated {
-                        Value::Number(n) => s1.push_str(n.to_string().as_str()),
-                        Value::String(s2) => s1.push_str(s2.as_str()),
-                        _ => panic!("incompatible types"),
-                    },
-                    _ => panic!("incompatible types"),
-                }
-            },
-            BinaryOp::Sub => {
-                match var {
-                    Value::Number(n1) => match evaluated {
-                        Value::Number(n2) => *n1 -= n2,
-                        Value::String(s) => *n1 -= s.parse::<f64>().expect("failed to add string to number"),
-                        _ => panic!("incompatible types"),
-                    },
-                    _ => panic!("incompatible types"),
-                }
-            },
-            BinaryOp::Mul => {
-                match var {
-                    Value::Number(n1) => match evaluated {
-                        Value::Number(n2) => *n1 *= n2,
-                        Value::String(s) => *n1 *= s.parse::<f64>().expect("failed to add string to number"),
-                        _ => panic!("incompatible types"),
-                    },
-                    Value::String(s) => match evaluated {
-                        Value::Number(n) => *s = s.repeat(n as usize),
-                        _ => panic!("incompatible types"),
-                    },
-                    _ => panic!("incompatible types"),
-                }
-            },
-            BinaryOp::Div => {
-                match var {
-                    Value::Number(n1) => match evaluated {
-                        Value::Number(n2) => *n1 /= n2,
-                        Value::String(s) => *n1 /= s.parse::<f64>().expect("failed to add string to number"),
-                        _ => panic!("incompatible types"),
-                    },
-                    _ => panic!("incompatible types"),
-                }
-            }
-        }
 
+        *var = calculate(operation, var_val, evaluated, span)?;
         Ok(())
     }
 
@@ -340,6 +300,83 @@ fn throw<T>(msg: &str, span: &ops::Range<usize>) -> Result<T, RuntimeError> {
     Err(RuntimeError {
         desc: msg.to_string(),
         span: span.clone(),
+    })
+}
+
+fn calculate(operation: &BinaryOp, lhs: Value, rhs: Value, span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
+    let gen_error = || {
+        let (op1, op2) = match operation {
+            BinaryOp::Add => ("add", "to"),
+            BinaryOp::Sub => ("subtract", "from"),
+            BinaryOp::Mul => ("multiply", "by"),
+            BinaryOp::Div => ("divide", "by"),
+        };
+
+        let val_str = |val: &Value| {
+            match val {
+                Value::Boolean(_) => "boolean",
+                Value::Number(_) => "number",
+                Value::String(_) => "string",
+                Value::None => "nil",
+            }
+        };
+
+        let msg = format!("attempted to {} {} {} {}", op1, val_str(&rhs), op2, val_str(&lhs));
+        Err::<>(RuntimeError {
+            desc: msg,
+            span: span.clone(),
+        })
+    };
+
+    let err = gen_error();
+
+    Ok(match operation {
+        BinaryOp::Add => {
+            match rhs {
+                Value::Number(n1) => match lhs {
+                    Value::Number(n2) => Value::Number(n1 + n2),
+                    _ => err?,
+                },
+                Value::String(s1) => match lhs {
+                    Value::Number(n) => Value::String(format!("{s1}{n}")),
+                    Value::String(s2) => Value::String(format!("{s1}{s2}")),
+                    Value::Boolean(b) => Value::String(format!("{s1}{b}")),
+                    _ => err?,
+                },
+                _ => err?,
+            }
+        },
+        BinaryOp::Sub => {
+            match rhs {
+                Value::Number(n1) => match lhs {
+                    Value::Number(n2) => Value::Number(n1 - n2),
+                    _ => err?,
+                },
+                _ => err?,
+            }
+        },
+        BinaryOp::Mul => {
+            match rhs {
+                Value::Number(n1) => match lhs {
+                    Value::Number(n2) => Value::Number(n1 * n2),
+                    _ => err?,
+                },
+                Value::String(s) => match lhs {
+                    Value::Number(n) => Value::String(s.repeat(n as usize)),
+                    _ => err?,
+                },
+                _ => err?,
+            }
+        },
+        BinaryOp::Div => {
+            match rhs {
+                Value::Number(n1) => match lhs {
+                    Value::Number(n2) => Value::Number(n1 / n2),
+                    _ => err?,
+                },
+                _ => err?,
+            }
+        }
     })
 }
 

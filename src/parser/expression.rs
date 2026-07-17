@@ -17,7 +17,7 @@ pub enum Statement {
 
     Return(Box<SpannedExpr>),
 
-    BinaryOp {
+    Assign {
         operation: BinaryOp,
         variable: String,
         value: Box<SpannedExpr>,
@@ -53,6 +53,13 @@ pub enum Expression {
     Str(String),
     Boolean(bool),
     Identifier(String),
+    Group(Box<SpannedExpr>),
+
+    BinaryOp {
+        operation: BinaryOp,
+        lhs: Box<SpannedExpr>,
+        rhs: Box<SpannedExpr>,
+    },
 
     FnCall {
         name: String,
@@ -86,7 +93,7 @@ impl BinaryOp {
             Token::Chip => BinaryOp::Sub,
             Token::Mate => BinaryOp::Mul,
             Token::Split => BinaryOp::Div,
-            _ => panic!("cant parse token into binary operation, this shouldnt panic unless theres a bug in the interpreter"),
+            _ => unreachable!(),
         }
     }
 }

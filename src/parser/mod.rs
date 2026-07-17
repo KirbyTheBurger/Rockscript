@@ -7,6 +7,7 @@ const RETURN_CONTEXT: &str = "inside of engrave statement";
 const CMP_CONTEXT: &str = "inside of weigh statement";
 const IF_CONTEXT: &str = "inside of inspect statement";
 const WHILE_CONTEXT: &str = "inside of roll statement";
+const GROUP_CONTEXT: &str = "inside of `()` group";
 
 use std::ops;
 
@@ -58,7 +59,7 @@ impl Parser {
             Token::Throw => self.read_var_def()?,
             Token::Present => self.read_print()?,
             Token::Carve => self.read_fn_def()?,
-            Token::Smash | Token::Chip | Token::Mate | Token::Split => self.read_binary_op(current)?,
+            Token::Smash | Token::Chip | Token::Mate | Token::Split => self.read_assign(current)?,
             Token::Engrave => self.read_return()?,
             Token::Inspect => self.read_if()?,
             Token::Roll => self.read_while()?,
@@ -81,37 +82,73 @@ impl Parser {
     }
 
     fn parse_expression(&mut self, current: Token) -> Result<SpannedExpr, ParseError> {
-        let start = self.current_span().start;
+        let start_span = self.current_span();
         self.advance();
 
-        let expr = match current {
+        let mut expr = match current {
             Token::Number(n) => Number(n),
             Token::String(s) => Str(s),
             Token::True => Boolean(true),
             Token::False => Boolean(false),
             Token::Identifier(s) => Identifier(s),
+            Token::LParen => self.read_group()?,
             Token::Follow => self.read_fn_call()?,
             Token::Weigh => self.read_comparison()?,
             _ => {
                 return Err(ParseError {
-                    span: self.current_span(),
+                    span: start_span.clone(),
                     desc: format!("expected expression, got {:?}", current),
                 });
             },
         };
 
+        if matches!(self.current(), Some(Token::Smash | Token::Chip | Token::Mate | Token::Split)) {
+            let lhs_span = ops::Range { start: start_span.start, end: self.current_span().end };
+            expr = self.read_binaryop(SpannedExpr { expr, span: lhs_span })?;
+        }
+
         if self.debug {
             println!("produced expression: {:?}", expr);
         }
 
-        let end = self.current_span().end;
+        let end_span = self.current_span();
         Ok(SpannedExpr {
             expr,
-            span: ops::Range { start, end },
+            span: ops::Range { start: start_span.start, end: end_span.end },
         })
     }
 
-    fn read_return(&mut self) -> Result<Statement   , ParseError> {
+    fn read_group(&mut self) -> Result<Expression, ParseError> {
+        let current = self.expect_some("expression", GROUP_CONTEXT)?;
+        let body = self.parse_expression(current)?;
+        self.expect(Token::RParen, GROUP_CONTEXT)?;
+        Ok(Group(Box::new(body)))
+    }
+
+    fn read_binaryop(&mut self, lhs: SpannedExpr) -> Result<Expression, ParseError> {
+        let op_token = self.expect_some("operator", ARITHMETIC_CONTEXT)?;
+        self.advance();
+        let op = BinaryOp::from_token(op_token);
+        
+        let expected = match op {
+            BinaryOp::Add => Token::Into,
+            BinaryOp::Sub => Token::Off,
+            BinaryOp::Mul => Token::With,
+            BinaryOp::Div => Token::From,
+        };
+        self.expect(expected, ARITHMETIC_CONTEXT)?;
+
+        let current = self.expect_some("value", ARITHMETIC_CONTEXT)?;
+        let rhs = self.parse_expression(current)?;
+
+        Ok(Expression::BinaryOp {
+            operation: op,
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+        })
+    }
+
+    fn read_return(&mut self) -> Result<Statement, ParseError> {
         let current = self.expect_some("value", RETURN_CONTEXT)?;
         let val = self.parse_expression(current)?;
         Ok(Return(Box::new(val)))
@@ -232,7 +269,7 @@ impl Parser {
         })
     }
 
-    fn read_binary_op(&mut self, op: Token) -> Result<Statement, ParseError> {
+    fn read_assign(&mut self, op: Token) -> Result<Statement, ParseError> {
         let current = self.expect_some("value", ARITHMETIC_CONTEXT)?;
         let value = self.parse_expression(current)?;
         
@@ -246,7 +283,7 @@ impl Parser {
         self.expect(expected, ARITHMETIC_CONTEXT)?;
 
         let var = self.expect_identifier(ARITHMETIC_CONTEXT)?;
-        Ok(Statement::BinaryOp {
+        Ok(Assign {
             operation: BinaryOp::from_token(op),
             variable: var,
             value: Box::new(value),
