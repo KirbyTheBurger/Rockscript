@@ -1,0 +1,14 @@
+[package]
+name = "rockscript"
+version = "0.2.2"
+edition = "2024"
+description = "Esolang called Rockscript"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4.6.4", features = ["derive"] }
+rockscript-core = { path = "../rockscript-core" }
+
+[[bin]]
+name = "rockscript"
+path = "src/main.rs"

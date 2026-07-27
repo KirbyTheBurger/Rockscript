@@ -1,13 +1,7 @@
 use std::fs;
 
 use clap::Parser as CliParser;
-use crate::{error::report_error, interpreter::Interpreter, lexer::tokenize, parser::Parser};
-use Commands::*;
-
-mod lexer;
-mod parser;
-mod interpreter;
-mod error;
+use rockscript_core::{error::report_error, interpreter::Interpreter, lexer::tokenize, parser::Parser};
 
 #[derive(CliParser)]
 #[command(about, version, long_about = None)]
@@ -30,7 +24,7 @@ fn main() {
     let args = Args::parse();
 
     match args.command {
-        Run {file, debug} => {
+        Commands::Run {file, debug} => {
             let source = fs::read_to_string(&file);
             match source {
                 Ok(s) => {

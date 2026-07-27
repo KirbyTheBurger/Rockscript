@@ -1,0 +1,8 @@
+[package]
+name = "rockscript-core"
+publish = false
+edition = "2024"
+
+[dependencies]
+ariadne = "0.6.0"
+logos = "0.16.1"

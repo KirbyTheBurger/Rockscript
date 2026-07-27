@@ -87,7 +87,7 @@ pub enum BinaryOp {
 }
 
 impl BinaryOp {
-    pub fn from_token(token: Token) -> BinaryOp {
+    pub(crate) fn from_token(token: Token) -> BinaryOp {
         match token {
             Token::Smash => BinaryOp::Add,
             Token::Chip => BinaryOp::Sub,
