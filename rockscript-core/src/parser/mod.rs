@@ -164,7 +164,7 @@ impl Parser {
             Some(Token::Enough) => {
                 self.advance();
 
-                return Ok(If {
+                Ok(If {
                     condition,
                     body,
                     else_: None,
@@ -189,7 +189,7 @@ impl Parser {
                     self.advance();
                 }
 
-                return Ok(If {
+                Ok(If {
                     condition,
                     body,
                     else_: Some(else_)

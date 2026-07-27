@@ -20,6 +20,7 @@ enum Commands {
     },
 }
 
+#[allow(clippy::needless_return)]
 fn main() {
     let args = Args::parse();
 

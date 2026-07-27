@@ -3,7 +3,7 @@ use crate::{error::ParseError, lexer::Token, parser::{Parser, expression::Spanne
 impl Parser {
     pub fn current(&self) -> Option<Token> {
         self.tokens.get(self.pos)
-            .map_or(None, |t| Some(t.token.clone()))
+            .map(|t| t.token.clone())
     }
 
     pub fn advance(&mut self) {

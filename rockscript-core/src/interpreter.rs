@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{collections::HashMap, ops, rc::Rc};
 
 use crate::{error::RuntimeError, parser::expression::{BinaryOp, Expression::{self, *}, SpannedExpr, SpannedStatement, Statement::{self, *}}};
@@ -55,17 +56,17 @@ impl Interpreter {
     fn eval_statement(&mut self, statement: &SpannedStatement) -> Result<ControlFlow, RuntimeError> {
         match &statement.statement {
             VarDef { name, value } => {
-                let evaluated = self.eval_expression(&value)?;
+                let evaluated = self.eval_expression(value)?;
                 self.insert_variable(name, evaluated);
             },
             Print(value) => {
-                println!("{}", self.eval_expression(&value)?.to_string())
+                println!("{}", self.eval_expression(value)?)
             },
             Statement::Assign { operation, variable, value } => {
-                self.eval_assign(operation, variable, &value, &statement.span)?;
+                self.eval_assign(operation, variable, value, &statement.span)?;
             },
             FnDef {name, params, body} => {
-                self.define_function(name, &params, &body);
+                self.define_function(name, params, body);
             },
             Return(e) => {
                 return Ok(ControlFlow::Return(self.eval_expression(e)?));
@@ -103,7 +104,7 @@ impl Interpreter {
                 let left_value = self.eval_expression(left)?;
                 let right_value = self.eval_expression(right)?;
 
-                return Ok(Value::Boolean(left_value >= right_value));
+                Ok(Value::Boolean(left_value >= right_value))
             },
             Expression::BinaryOp { operation, lhs, rhs } => {
                 self.eval_binaryop(operation, lhs, rhs, &expr.span)
@@ -117,7 +118,7 @@ impl Interpreter {
         calculate(operation, lhs, rhs, span)
     }
 
-    fn eval_while(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>) -> Result<ControlFlow, RuntimeError> {
+    fn eval_while(&mut self, condition: &SpannedExpr, body: &Vec<SpannedStatement>) -> Result<ControlFlow, RuntimeError> {
         while matches!(self.eval_expression(condition)?, Value::Boolean(true)) {
             self.push_scope();
 
@@ -142,7 +143,7 @@ impl Interpreter {
         Ok(ControlFlow::None)
     }
 
-    fn eval_if(&mut self, condition: &Box<SpannedExpr>, body: &Vec<SpannedStatement>, else_: &Option<Vec<SpannedStatement>>) -> Result<ControlFlow, RuntimeError> {
+    fn eval_if(&mut self, condition: &SpannedExpr, body: &Vec<SpannedStatement>, else_: &Option<Vec<SpannedStatement>>) -> Result<ControlFlow, RuntimeError> {
         let cond_val = self.eval_expression(condition)?;
 
         if matches!(cond_val, Value::Boolean(true)) {
@@ -186,7 +187,7 @@ impl Interpreter {
         Ok(ControlFlow::None)
     }
 
-    fn eval_fncall(&mut self, name: &String, args: &Vec<SpannedExpr>, span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
+    fn eval_fncall(&mut self, name: &String, args: &[SpannedExpr], span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
         let function = self.get_function(name.to_string()).cloned();
         if let Some(func) = function {
             self.push_scope();
@@ -213,7 +214,7 @@ impl Interpreter {
                 _ => throw("attempted to break form function", span)?,
             }
 
-            return Ok(Value::None)
+            Ok(Value::None)
         } else {
             throw("unknown function", span)
         }
@@ -380,16 +381,16 @@ fn calculate(operation: &BinaryOp, lhs: Value, rhs: Value, span: &ops::Range<usi
     })
 }
 
-impl ToString for Value {
-    fn to_string(&self) -> String {
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Value::Number(n) => n.to_string(),
-            Value::String(s) => s.clone(),
+            Value::Number(n) => n.fmt(f),
+            Value::String(s) => s.fmt(f),
             Value::Boolean(b) => match b {
-                true => String::from("big"),
-                false => String::from("small"),
+                true => write!(f, "big"),
+                false => write!(f, "small"),
             },
-            Value::None => "nil".to_string()
+            Value::None => write!(f, "nil")
         }
     }
 }
