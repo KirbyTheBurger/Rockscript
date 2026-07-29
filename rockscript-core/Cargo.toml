@@ -1,8 +1,14 @@
 [package]
 name = "rockscript-core"
-publish = false
+version = "0.2.3"
 edition = "2024"
+description = "Internal crate used by Rockscript"
+license = "MIT"
 
 [dependencies]
 ariadne = "0.6.0"
 logos = "0.16.1"
+
+[[bin]]
+name = "rockscript-core"
+path = "src/main.rs"

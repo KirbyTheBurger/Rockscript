@@ -7,7 +7,7 @@ license = "MIT"
 
 [dependencies]
 clap = { version = "4.6.4", features = ["derive"] }
-rockscript-core = { path = "../rockscript-core" }
+rockscript-core = { path = "../rockscript-core", version = "0.2.3" }
 
 [[bin]]
 name = "rockscript"
