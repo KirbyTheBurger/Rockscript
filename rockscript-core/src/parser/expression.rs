@@ -96,4 +96,13 @@ impl BinaryOp {
             _ => unreachable!(),
         }
     }
+
+    pub(crate) fn expected_pair(&self) -> Token {
+        match self {
+            BinaryOp::Add => Token::Into,
+            BinaryOp::Sub => Token::Off,
+            BinaryOp::Mul => Token::With,
+            BinaryOp::Div => Token::From,
+        }
+    }
 }

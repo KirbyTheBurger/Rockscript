@@ -50,8 +50,8 @@ fn main() {
                         }
                     };
 
-                    let mut interpreter = Interpreter::new(expressions);
-                    if let Err(e) = interpreter.run() {
+                    let mut interpreter = Interpreter::new();
+                    if let Err(e) = interpreter.run(expressions) {
                         report_error(&s, &file, Box::new(e));
                         return;
                     }

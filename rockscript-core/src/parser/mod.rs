@@ -102,9 +102,15 @@ impl Parser {
             },
         };
 
-        if matches!(self.current(), Some(Token::Smash | Token::Chip | Token::Mate | Token::Split)) {
-            let lhs_span = ops::Range { start: start_span.start, end: self.current_span().end };
-            expr = self.read_binaryop(SpannedExpr { expr, span: lhs_span })?;
+        let current = self.current();
+        if matches!(current, Some(Token::Smash | Token::Chip | Token::Mate | Token::Split)) {
+            if self.peek() == Some(BinaryOp::from_token(current.unwrap()).expected_pair()) {
+                let lhs_span = ops::Range {
+                    start: start_span.start,
+                    end: self.current_span().end
+                };
+                expr = self.read_binaryop(SpannedExpr { expr, span: lhs_span })?;
+            }
         }
 
         if self.debug {
@@ -130,13 +136,7 @@ impl Parser {
         self.advance();
         let op = BinaryOp::from_token(op_token);
         
-        let expected = match op {
-            BinaryOp::Add => Token::Into,
-            BinaryOp::Sub => Token::Off,
-            BinaryOp::Mul => Token::With,
-            BinaryOp::Div => Token::From,
-        };
-        self.expect(expected, ARITHMETIC_CONTEXT)?;
+        self.expect(op.expected_pair(), ARITHMETIC_CONTEXT)?;
 
         let current = self.expect_some("value", ARITHMETIC_CONTEXT)?;
         let rhs = self.parse_expression(current)?;

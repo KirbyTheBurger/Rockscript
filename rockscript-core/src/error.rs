@@ -11,11 +11,13 @@ impl From<std::ops::Range<usize>> for LexError {
     }
 }
 
+#[derive(Debug)]
 pub struct ParseError {
     pub desc: String,
     pub span: ops::Range<usize>,
 }
 
+#[derive(Debug)]
 pub struct RuntimeError {
     pub desc: String,
     pub span: ops::Range<usize>,

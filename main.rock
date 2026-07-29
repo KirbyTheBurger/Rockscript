@@ -85,3 +85,22 @@ roll while weigh 2 against x
     smash 1 into x
     present x
 enough
+
+present 1 smashed into 2
+present 2 chipped off 1
+present 2 mated with 3
+present 6 split from 2
+
+present (1 smashed into 2)
+present (2 mated with 3) smashed into (1 chipped off 4)
+
+throw 5 rocks at x
+smash 3 into x
+present x
+
+throw 10 rocks at y
+chip 4 off y
+present y
+
+present 1 smashed into (2 mated with 3)
+present (1 smashed into 2) mated with (3 smashed into 4)

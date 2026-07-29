@@ -19,6 +19,11 @@ impl Parser {
             })
     }
 
+    pub fn peek(&self) -> Option<Token> {
+        self.tokens.get(self.pos + 1)
+            .map(|t| t.token.clone())
+    }
+
     pub fn parse_until(&mut self, stop: &[Token]) -> Result<Vec<SpannedStatement>, ParseError> {
         let mut body = Vec::new();
         while !stop.iter().any(|t| self.current().as_ref() == Some(t)) {

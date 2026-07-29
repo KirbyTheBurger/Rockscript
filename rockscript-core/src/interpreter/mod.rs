@@ -1,7 +1,9 @@
 use core::fmt;
 use std::{collections::HashMap, ops, rc::Rc};
 
-use crate::{error::RuntimeError, parser::expression::{BinaryOp, Expression::{self, *}, SpannedExpr, SpannedStatement, Statement::{self, *}}};
+use crate::{error::RuntimeError, interpreter::arithmetic::calculate, parser::expression::{BinaryOp, Expression::{self, *}, SpannedExpr, SpannedStatement, Statement::{self, *}}};
+
+mod arithmetic;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
@@ -14,8 +16,7 @@ pub enum Value {
 pub struct Interpreter {
     pub variables: Vec<HashMap<String, Value>>,
     pub functions: Vec<HashMap<String, Function>>,
-    program: Vec<Rc<SpannedStatement>>,
-    pos: usize,
+    ret_value: Value,
 }
 
 #[derive(Debug, Clone)]
@@ -31,12 +32,11 @@ enum ControlFlow {
 }
 
 impl Interpreter {
-    pub fn new(program: Vec<SpannedStatement>) -> Interpreter {
+    pub fn new() -> Interpreter {
         let mut interpreter = Interpreter {
             variables: Vec::new(),
             functions: Vec::new(),
-            program: program.into_iter().map(Rc::new).collect(),
-            pos: 0,
+            ret_value: Value::None,
         };
 
         interpreter.push_scope();
@@ -44,13 +44,16 @@ impl Interpreter {
         interpreter
     }
 
-    pub fn run(&mut self) -> Result<(), RuntimeError> {
-        while let Some(s) = self.current() {
-            self.eval_statement(&s)?;
-            self.advance();
+    pub fn run(&mut self, program: Vec<SpannedStatement>) -> Result<Value, RuntimeError> {
+        for s in program {
+            match self.eval_statement(&s)? {
+                ControlFlow::None => {},
+                ControlFlow::Break => return throw("unexpected `destroy`", &s.span),
+                ControlFlow::Return(v) => self.ret_value = v,
+            }
         }
 
-        Ok(())
+        Ok(self.ret_value.clone())
     }
 
     fn eval_statement(&mut self, statement: &SpannedStatement) -> Result<ControlFlow, RuntimeError> {
@@ -78,7 +81,11 @@ impl Interpreter {
                 return self.eval_while(condition, body);
             },
             Break => return Ok(ControlFlow::Break),
-            Expr(e) => { self.eval_expression(e)?; }
+            Expr(e) => {
+                let value = self.eval_expression(e)?;
+                self.ret_value = value;
+                return Ok(ControlFlow::None);
+            }
         }
 
         Ok(ControlFlow::None)
@@ -96,7 +103,7 @@ impl Interpreter {
                 let value = self.get_variable(s.clone());
                 match value {
                     Some(v) => Ok(v.clone()),
-                    None => panic!("unknown variable"),
+                    None => throw("unknown variable", &expr.span),
                 }
             },
             Group(e) => self.eval_expression(e),
@@ -287,97 +294,12 @@ impl Interpreter {
         *var = calculate(operation, var_val, evaluated, span)?;
         Ok(())
     }
-
-    fn current(&self) -> Option<Rc<SpannedStatement>> {
-        self.program.get(self.pos).cloned()
-    }
-
-    fn advance(&mut self) {
-        self.pos += 1;
-    }
 }
 
 fn throw<T>(msg: &str, span: &ops::Range<usize>) -> Result<T, RuntimeError> {
     Err(RuntimeError {
         desc: msg.to_string(),
         span: span.clone(),
-    })
-}
-
-fn calculate(operation: &BinaryOp, lhs: Value, rhs: Value, span: &ops::Range<usize>) -> Result<Value, RuntimeError> {
-    let gen_error = || {
-        let (op1, op2) = match operation {
-            BinaryOp::Add => ("add", "to"),
-            BinaryOp::Sub => ("subtract", "from"),
-            BinaryOp::Mul => ("multiply", "by"),
-            BinaryOp::Div => ("divide", "by"),
-        };
-
-        let val_str = |val: &Value| {
-            match val {
-                Value::Boolean(_) => "boolean",
-                Value::Number(_) => "number",
-                Value::String(_) => "string",
-                Value::None => "nil",
-            }
-        };
-
-        let msg = format!("attempted to {} {} {} {}", op1, val_str(&rhs), op2, val_str(&lhs));
-        Err::<>(RuntimeError {
-            desc: msg,
-            span: span.clone(),
-        })
-    };
-
-    let err = gen_error();
-
-    Ok(match operation {
-        BinaryOp::Add => {
-            match rhs {
-                Value::Number(n1) => match lhs {
-                    Value::Number(n2) => Value::Number(n1 + n2),
-                    _ => err?,
-                },
-                Value::String(s1) => match lhs {
-                    Value::Number(n) => Value::String(format!("{s1}{n}")),
-                    Value::String(s2) => Value::String(format!("{s1}{s2}")),
-                    Value::Boolean(b) => Value::String(format!("{s1}{b}")),
-                    _ => err?,
-                },
-                _ => err?,
-            }
-        },
-        BinaryOp::Sub => {
-            match rhs {
-                Value::Number(n1) => match lhs {
-                    Value::Number(n2) => Value::Number(n1 - n2),
-                    _ => err?,
-                },
-                _ => err?,
-            }
-        },
-        BinaryOp::Mul => {
-            match rhs {
-                Value::Number(n1) => match lhs {
-                    Value::Number(n2) => Value::Number(n1 * n2),
-                    _ => err?,
-                },
-                Value::String(s) => match lhs {
-                    Value::Number(n) => Value::String(s.repeat(n as usize)),
-                    _ => err?,
-                },
-                _ => err?,
-            }
-        },
-        BinaryOp::Div => {
-            match rhs {
-                Value::Number(n1) => match lhs {
-                    Value::Number(n2) => Value::Number(n1 / n2),
-                    _ => err?,
-                },
-                _ => err?,
-            }
-        }
     })
 }
 
