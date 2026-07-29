@@ -8,7 +8,3 @@ license = "MIT"
 [dependencies]
 ariadne = "0.6.0"
 logos = "0.16.1"
-
-[[bin]]
-name = "rockscript-core"
-path = "src/main.rs"
