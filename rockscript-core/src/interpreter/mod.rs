@@ -45,6 +45,8 @@ impl Interpreter {
     }
 
     pub fn run(&mut self, program: Vec<SpannedStatement>) -> Result<Value, RuntimeError> {
+        self.ret_value = Value::None;
+
         for s in program {
             match self.eval_statement(&s)? {
                 ControlFlow::None => {},
