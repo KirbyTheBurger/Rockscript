@@ -1,6 +1,6 @@
 [package]
 name = "rockscript"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 description = "Esolang called Rockscript"
 license = "MIT"
@@ -8,7 +8,7 @@ license = "MIT"
 [dependencies]
 clap = { version = "4.6.4", features = ["derive"] }
 directories = "6.0.0"
-rockscript-core = { path = "../rockscript-core", version = "0.2.3" }
+rockscript-core = { path = "../rockscript-core", version = "0.2.4" }
 rustyline = { version = "18.0.1", features = ["derive"] }
 
 [[bin]]
