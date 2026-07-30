@@ -1,6 +1,6 @@
 [package]
 name = "rockscript-core"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2024"
 description = "Internal crate used by Rockscript"
 license = "MIT"
