@@ -1,4 +1,4 @@
 [workspace]
-members = ["rockscript-cli", "rockscript-core"]
+members = ["rockscript-cli", "rockscript-core", "rockscript-lsp"]
 default-members = ["rockscript-cli"]
 resolver = "2"

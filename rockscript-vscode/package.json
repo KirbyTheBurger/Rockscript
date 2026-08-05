@@ -1,0 +1,27 @@
+{
+  "name": "rockscript-vscode",
+  "displayName": "RockScript",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.85.0" },
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "rockscript",
+        "extensions": [".rock"],
+        "configuration": "./language-configuration.json"
+      }
+    ]
+  },
+  "scripts": {
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20",
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.0"
+  }
+}

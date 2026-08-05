@@ -1,0 +1,11 @@
+[package]
+name = "rockscript-lsp"
+version = "0.1.0"
+edition = "2024"
+description = "Internal LSP crate used by Rockscript"
+license = "MIT"
+
+[dependencies]
+rockscript-core = { version = "0.2.4", path = "../rockscript-core" }
+tokio = { version = "1.53.1", features = ["full"] }
+tower-lsp-server = "0.23.0"
