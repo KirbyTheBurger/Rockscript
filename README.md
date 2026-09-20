@@ -13,7 +13,7 @@ yay -S rockscript
 ```
   
 ### Prebuilt binaries  
-Over at the [releases](https://github.com/KirbyTheBurger/Rockscript/releases) tab, there are a handfull of prebuilt binaries for 32 and 64 bit windows and linux.  
+Over at the [releases](https://github.com/KirbyTheBurger/Rockscript/releases) tab, there are a handfull of prebuilt binaries for 64 bit windows and linux.  
   
 ## Variables  
 There are 3 types of variables, **strings**, **booleans** and **numbers**.  
